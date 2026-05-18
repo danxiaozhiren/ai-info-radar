@@ -1,0 +1,124 @@
+sources:
+  - name: OpenAI News
+    type: rss
+    url: https://openai.com/news/rss.xml
+    tier: primary
+    limit: 12
+    areas:
+      - models
+      - products
+      - agents
+      - safety
+      - industry
+    enabled: true
+
+  - name: OpenAI Python SDK Releases
+    type: rss
+    url: https://github.com/openai/openai-python/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - developer_tools
+      - api
+      - sdk
+      - models
+    enabled: true
+
+  - name: OpenAI Agents Python Releases
+    type: rss
+    url: https://github.com/openai/openai-agents-python/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - agents
+      - ai coding
+      - tool use
+      - sdk
+      - automation
+    enabled: true
+
+  - name: Anthropic Python SDK Releases
+    type: rss
+    url: https://github.com/anthropics/anthropic-sdk-python/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - developer_tools
+      - api
+      - sdk
+      - models
+    enabled: true
+
+  - name: Browser Use Releases
+    type: rss
+    url: https://github.com/browser-use/browser-use/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - browser use
+      - agents
+      - automation
+      - open_source
+    enabled: true
+
+  - name: MCP Python SDK Releases
+    type: rss
+    url: https://github.com/modelcontextprotocol/python-sdk/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - mcp
+      - tool use
+      - agents
+      - sdk
+      - open_source
+    enabled: true
+
+  - name: MCP TypeScript SDK Releases
+    type: rss
+    url: https://github.com/modelcontextprotocol/typescript-sdk/releases.atom
+    tier: primary
+    limit: 8
+    areas:
+      - mcp
+      - tool use
+      - agents
+      - sdk
+      - open_source
+    enabled: true
+
+  - name: arXiv cs.AI
+    type: rss
+    url: https://export.arxiv.org/rss/cs.AI
+    tier: primary
+    limit: 12
+    areas:
+      - papers
+      - research
+      - models
+      - ai
+    enabled: true
+
+  - name: arXiv cs.CL
+    type: rss
+    url: https://export.arxiv.org/rss/cs.CL
+    tier: primary
+    limit: 12
+    areas:
+      - papers
+      - research
+      - language models
+      - nlp
+    enabled: true
+
+  - name: arXiv cs.LG
+    type: rss
+    url: https://export.arxiv.org/rss/cs.LG
+    tier: primary
+    limit: 12
+    areas:
+      - papers
+      - research
+      - machine learning
+      - evals
+    enabled: true

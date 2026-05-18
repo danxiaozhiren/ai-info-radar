@@ -41,7 +41,8 @@ sources:
   - name: AI HOT
     url: https://aihot.virxact.com/
     tier: lead
+    enabled: false
     areas:
       - lead_source
       - ai_news
-    note: "Use as a lead source only. Verify important items from original sources."
+    note: "Optional comparison/backfill source only. Do not use as a default MVP source; verify any useful lead from original sources."

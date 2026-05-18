@@ -35,6 +35,9 @@ Useful as leads, not conclusions.
 - Reddit or community discussions
 - Chinese AI media and communities
 
+Lead sources are not default MVP inputs. They are optional comparison,
+backfill, or discovery aids after the primary-source path is working.
+
 ### Tier 4: Noise Sources
 
 Use only when there is a clear reason.
@@ -49,6 +52,10 @@ Use only when there is a clear reason.
 
 Lead sources can start investigation, but important conclusions should point
 back to Tier 1 or Tier 2 sources whenever possible.
+
+The core radar should not be built on processed hot lists or newsletters. Use
+primary sources and stable structured feeds first; use lead sources only to
+notice possible gaps in coverage.
 
 ## Coverage Areas
 

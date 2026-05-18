@@ -45,6 +45,7 @@ Each radar run should help answer:
 - Score both broad AI importance and personal learning value.
 - Use Browser Use only where browser observation or interaction adds value.
 - Turn important signals into learning notes or practice tasks.
+- Do not make processed hot lists or newsletters the default source of truth.
 
 ## Repository Map
 
@@ -81,6 +82,33 @@ scorer
 source verification
   ->
 daily radar / weekly learning map
+```
+
+The current MVP implements the daily-radar path with a deterministic local
+sample source so the full pipeline can be tested without network access. The
+next source milestone is primary-source-first collection, not hot-list
+aggregation.
+
+```powershell
+$env:PYTHONPATH="src"
+python -m ai_info_radar --sources configs/sources.local.yaml --output outputs/daily-radar.md
+```
+
+Run against the primary-source feed set:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m ai_info_radar --sources configs/sources.primary.yaml --output outputs/daily-radar.md --max-per-source 3 --max-age-days 30
+```
+
+Reports default to Chinese. Pass `--language en` only when an English report is
+needed.
+
+Run tests:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m unittest discover -s tests
 ```
 
 ## Relationship To Browser Use

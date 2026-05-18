@@ -1,0 +1,10 @@
+sources:
+  - name: Local Sample Radar Items
+    type: local_json
+    path: data/sample_items.json
+    tier: primary
+    areas:
+      - sample
+      - mvp
+    enabled: true
+    note: "Deterministic sample source for local MVP validation."
