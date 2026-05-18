@@ -1,0 +1,24 @@
+weights:
+  world_value: 0.35
+  learning_value: 0.25
+  practice_value: 0.20
+  current_focus_fit: 0.20
+
+thresholds:
+  must_read: 8.0
+  worth_learning: 6.5
+  worth_trying: 6.5
+  monitor: 5.0
+  ignore_for_now: 0.0
+
+confidence:
+  high:
+    - primary_source
+    - multiple_reliable_sources
+  medium:
+    - strong_signal_source
+    - partial_verification
+  low:
+    - lead_source_only
+    - unclear_original_source
+    - unverified_claim

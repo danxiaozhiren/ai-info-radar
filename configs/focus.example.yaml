@@ -1,0 +1,25 @@
+current_focus:
+  name: "Browser Use / AI Agent"
+  description: "Current learning focus, not the product boundary."
+  weight: 1.5
+  keywords:
+    - browser use
+    - computer use
+    - ai agent
+    - agentic
+    - tool use
+    - mcp
+    - automation
+    - playwright
+    - puppeteer
+    - web agent
+    - claude code
+    - codex
+
+secondary_interests:
+  - ai coding
+  - rag
+  - memory
+  - multimodal ai
+  - model evaluation
+  - open-source ai tools

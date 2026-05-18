@@ -1,0 +1,47 @@
+sources:
+  - name: OpenAI Blog
+    url: https://openai.com/news/
+    tier: primary
+    areas:
+      - models
+      - products
+      - agents
+
+  - name: Anthropic News
+    url: https://www.anthropic.com/news
+    tier: primary
+    areas:
+      - models
+      - products
+      - safety
+      - agents
+
+  - name: Google DeepMind Blog
+    url: https://deepmind.google/discover/blog/
+    tier: primary
+    areas:
+      - research
+      - models
+      - multimodal
+
+  - name: GitHub Trending
+    url: https://github.com/trending
+    tier: strong_signal
+    areas:
+      - open_source
+      - developer_tools
+
+  - name: Hugging Face Papers
+    url: https://huggingface.co/papers
+    tier: strong_signal
+    areas:
+      - papers
+      - models
+
+  - name: AI HOT
+    url: https://aihot.virxact.com/
+    tier: lead
+    areas:
+      - lead_source
+      - ai_news
+    note: "Use as a lead source only. Verify important items from original sources."

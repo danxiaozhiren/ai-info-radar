@@ -1,0 +1,29 @@
+# Local data and generated outputs
+data/*
+!data/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
