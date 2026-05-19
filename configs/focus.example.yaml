@@ -1,6 +1,6 @@
 current_focus:
   name: "Browser Use / AI Agent"
-  description: "Current learning focus, not the product boundary."
+  description: "Current recommendation lens. It should affect ranking, explanation, and suggested actions, not the radar's collection boundary."
   weight: 1.5
   keywords:
     - browser use

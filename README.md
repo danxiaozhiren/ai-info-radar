@@ -1,30 +1,37 @@
 # AI Info Radar
 
-AI Info Radar is a personal AI frontier radar for learning and practice.
+AI Info Radar is a broad and comprehensive AI information radar for learning
+and practice.
 
-It continuously tracks new AI models, tools, papers, products, open-source
-projects, and industry signals, then turns noisy information into verified
-sources, learning topics, and practical next actions.
+It continuously tracks new AI models, capabilities, papers, products,
+developer tools, open-source projects, infrastructure, benchmarks, policy,
+safety signals, and industry changes, then turns noisy information into
+source-aware recommendations, learning topics, and practical next actions.
 
 ## Positioning
 
 AI Info Radar is not an AI hot list, a news scraper, or a narrow Agent-only
-digest.
+digest. It should be wide by default.
 
-It is built around two ideas:
+It is built around three ideas:
 
-1. Wide-angle AI awareness
+1. Comprehensive AI awareness
 
-   Stay close to the full AI frontier, not only the current learning topic.
+   Track the full AI landscape, not only the current learning topic.
 
-2. Adjustable learning focus
+2. Source-aware judgment
 
-   Highlight items related to the current focus, such as Browser Use, AI Agent,
-   RAG, multimodal AI, AI coding, model evaluation, or any future learning
-   direction.
+   Treat original sources, strong signals, and lead sources differently. The
+   radar should say how much confidence each recommendation deserves.
 
-The current focus is Browser Use and AI Agent, but the product boundary is the
-broader AI world.
+3. Adjustable personal focus
+
+   Use the current focus, such as Browser Use, AI Agent, RAG, multimodal AI, AI
+   coding, model evaluation, or any future learning direction, to shape
+   recommendations and suggested actions.
+
+The current focus is Browser Use and AI Agent, but that focus is only a lens.
+The product boundary is the whole AI world.
 
 ## Core Questions
 
@@ -32,9 +39,12 @@ Each radar run should help answer:
 
 - What changed in AI today or this week?
 - Which items are globally important?
+- Which areas of AI are changing fastest?
+- Which sources are reliable enough to act on?
 - Which items are worth learning?
 - Which items are worth trying hands-on?
 - Which claims need verification from original sources?
+- What should I do next given my current focus?
 - Which noisy items can be ignored for now?
 
 ## Output Principles
@@ -42,7 +52,10 @@ Each radar run should help answer:
 - Prefer original sources over second-hand summaries.
 - Separate facts, interpretations, and speculation.
 - Keep source links with every important item.
+- Keep broad AI coverage before applying the personal-focus lens.
 - Score both broad AI importance and personal learning value.
+- Use source quality and current focus together when generating
+  recommendations.
 - Use Browser Use only where browser observation or interaction adds value.
 - Turn important signals into learning notes or practice tasks.
 - Do not make processed hot lists or newsletters the default source of truth.
@@ -62,11 +75,20 @@ ai-info-radar/
 
 ## First MVP
 
-The first version should generate a short Markdown briefing from a small set of
-high-value sources.
+The first version should generate a short Markdown daily radar from a small set of
+high-value sources. Even when the source set is small, the product shape should
+remain broad: models, research, products, open source, tooling, infrastructure,
+benchmarks, policy, safety, and industry signals should all have a place in the
+radar.
 
-It should cover the broad AI frontier while giving extra weight to the current
-learning focus.
+The daily radar should treat the configured report date as the main event
+window. Items published or updated on that date go into the main "today" section;
+older items discovered during the run are backfill; lead-source items stay in a
+verification section until the original source is checked.
+
+It should first cover the broad AI frontier, then use source quality and the
+current learning focus to decide what to recommend, verify, study, try, or
+ignore.
 
 ```text
 sources
@@ -86,19 +108,26 @@ daily radar / weekly learning map
 
 The current MVP implements the daily-radar path with a deterministic local
 sample source so the full pipeline can be tested without network access. The
-next source milestone is primary-source-first collection, not hot-list
-aggregation.
+next source milestone is primary-source-first collection across the broad AI
+landscape, not hot-list aggregation.
 
 ```powershell
 $env:PYTHONPATH="src"
-python -m ai_info_radar --sources configs/sources.local.yaml --output outputs/daily-radar.md
+python -m ai_info_radar --sources configs/sources.local.yaml --output outputs/daily-radar.md --date 2026-05-19
 ```
 
 Run against the primary-source feed set:
 
 ```powershell
 $env:PYTHONPATH="src"
-python -m ai_info_radar --sources configs/sources.primary.yaml --output outputs/daily-radar.md --max-per-source 3 --max-age-days 30
+python -m ai_info_radar --sources configs/sources.primary.yaml --output outputs/daily-radar.md --date 2026-05-19 --max-per-source 3 --max-age-days 30
+```
+
+Run against lead and strong-signal discovery sources:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m ai_info_radar --sources configs/sources.leads.yaml --output outputs/daily-radar-leads.md --date 2026-05-19
 ```
 
 Reports default to Chinese. Pass `--language en` only when an English report is
@@ -114,7 +143,9 @@ python -m unittest discover -s tests
 ## Relationship To Browser Use
 
 Browser Use is an important implementation capability and a current learning
-focus, not the product boundary.
+focus, not the product boundary. The radar should still collect and judge the
+whole AI landscape before applying the Browser Use / AI Agent lens to
+recommendations.
 
 Good Browser Use tasks include:
 

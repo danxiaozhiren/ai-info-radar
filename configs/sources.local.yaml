@@ -3,6 +3,7 @@ sources:
     type: local_json
     path: data/sample_items.json
     tier: primary
+    coverage_area: other
     areas:
       - sample
       - mvp

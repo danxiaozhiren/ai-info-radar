@@ -9,16 +9,29 @@ fetchers
   ->
 normalizer
   ->
+coverage classifier
+  ->
 deduplicator
   ->
 scorer
   ->
 verifier
   ->
+recommendation engine
+  ->
 report writer
   ->
 learning/practice backlog
 ```
+
+## Architecture Principle
+
+Coverage comes before focus.
+
+The collection layer should represent the broad AI landscape. The focus layer
+should then influence ranking, explanation, and suggested action. This keeps the
+radar from becoming a single-topic digest while still making the output useful
+for the user's current learning path.
 
 ## Fetching Strategy
 
@@ -43,6 +56,7 @@ Each normalized item should keep:
 - claims
 - tags
 - raw category
+- coverage area
 - related focus topics
 - global importance score
 - learning value score
@@ -50,20 +64,26 @@ Each normalized item should keep:
 - current focus fit score
 - confidence
 - verification status
+- recommendation reason
+- suggested action
 
 ## Report Types
 
 Daily radar:
 
-- short, broad, high-signal update
+- short, broad, high-signal update across the AI landscape
 - maximum 10 to 15 items
-- focuses on what changed
+- focuses on what changed, how reliable it is, and what to do next
+- main section includes only items published or updated on the radar date
+- older items discovered during the run are separated as backfill
+- lead-source items are separated as verification leads
 
 Weekly learning map:
 
 - slower synthesis
 - identifies themes, concepts, and practice tasks
 - updates the personal learning route
+- separates broad AI changes from current-focus follow-up
 
 ## Browser Use Role
 

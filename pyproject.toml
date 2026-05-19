@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-info-radar"
+version = "0.1.0"
+description = "Broad AI information radar with source-aware recommendations."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "AI Info Radar Maintainers" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+yaml = ["PyYAML>=6.0"]
+
+[project.scripts]
+ai-info-radar = "ai_info_radar.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

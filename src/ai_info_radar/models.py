@@ -22,6 +22,7 @@ class SourceConfig:
     type: str = "web_page"
     url: str | None = None
     path: str | None = None
+    coverage_area: str = ""
     areas: list[str] = field(default_factory=list)
     note: str = ""
     enabled: bool = True
@@ -41,6 +42,8 @@ class RadarItem:
     claims: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     raw_category: str = ""
+    coverage_area: str = ""
+    source_role: str = ""
     related_focus_topics: list[str] = field(default_factory=list)
     evidence_notes: list[str] = field(default_factory=list)
     world_value: float = 0.0
@@ -50,6 +53,9 @@ class RadarItem:
     final_score: float = 0.0
     confidence: str = "low"
     verification_status: str = "unverified"
+    action_type: str = "monitor"
+    recommendation_reason: str = ""
+    daily_bucket: str = "backfill"
     labels: list[str] = field(default_factory=list)
     related_items: list["RadarItem"] = field(default_factory=list)
     id: str = ""
@@ -94,6 +100,8 @@ class RadarItem:
             claims=[str(item).strip() for item in data.get("claims", []) if str(item).strip()],
             tags=[str(item).strip() for item in data.get("tags", []) if str(item).strip()],
             raw_category=str(data.get("raw_category", "")).strip(),
+            coverage_area=str(data.get("coverage_area") or source.coverage_area).strip(),
+            source_role=str(data.get("source_role", "")).strip(),
             related_focus_topics=[
                 str(item).strip()
                 for item in data.get("related_focus_topics", [])
@@ -102,6 +110,9 @@ class RadarItem:
             evidence_notes=[
                 str(item).strip() for item in data.get("evidence_notes", []) if str(item).strip()
             ],
+            action_type=str(data.get("action_type", "monitor")).strip() or "monitor",
+            recommendation_reason=str(data.get("recommendation_reason", "")).strip(),
+            daily_bucket=str(data.get("daily_bucket", "backfill")).strip() or "backfill",
         )
 
 
@@ -125,3 +136,5 @@ class RadarRun:
     items: list[RadarItem]
     fetch_errors: list[str]
     generated_at: str
+    report_date: str = ""
+    timezone_name: str = "Asia/Shanghai"

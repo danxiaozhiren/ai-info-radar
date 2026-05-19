@@ -42,6 +42,7 @@ def load_sources(path: str | Path) -> list[SourceConfig]:
                 type=source_type,
                 url=_optional_str(raw.get("url")),
                 path=_optional_str(raw.get("path")),
+                coverage_area=str(raw.get("coverage_area", "")).strip(),
                 areas=[str(item).strip() for item in raw.get("areas", []) if str(item).strip()],
                 note=str(raw.get("note", "")).strip(),
                 enabled=bool(raw.get("enabled", True)),

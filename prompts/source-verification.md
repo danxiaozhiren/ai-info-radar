@@ -1,11 +1,12 @@
 # Source Verification Prompt
 
-You are verifying an AI news item before it enters the radar.
+You are verifying an AI information item before it enters the radar.
 
 ## Task
 
 Given a candidate item and its source links, classify what is fact, what is
-interpretation, and what remains unverified.
+interpretation, and what remains unverified. Then explain whether the item is
+broadly important, mainly relevant to the current focus, or only a weak lead.
 
 ## Checks
 
@@ -16,6 +17,8 @@ interpretation, and what remains unverified.
 - Does the item include concrete changes, code, release notes, paper details,
   benchmark data, or product behavior?
 - What should be checked manually?
+- Does the recommendation come from source strength, broad AI importance,
+  current focus fit, or hands-on value?
 
 ## Output
 
@@ -26,5 +29,6 @@ Supported facts:
 Interpretation:
 Unverified claims:
 Suggested confidence:
+Recommendation reason:
 Next action:
 ```

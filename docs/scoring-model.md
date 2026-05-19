@@ -2,10 +2,12 @@
 
 ## Goal
 
-Keep the radar broad without becoming noisy.
+Keep the radar broad without becoming noisy, then turn the broad scan into
+personal recommendations.
 
 The scoring model should let globally important AI changes surface even when
-they are not related to the current learning focus.
+they are not related to the current learning focus. The current focus should
+shape advice and actions, not hide the rest of AI.
 
 ## Core Scores
 
@@ -49,7 +51,10 @@ Signals:
 
 How relevant is this item to the current learning focus?
 
-This score should boost, not dominate.
+This score should boost, not dominate. A high focus score should usually change
+the recommendation, for example from "monitor" to "try hands-on", but a low
+focus score should not suppress a major model, research, safety, policy, or
+industry signal.
 
 Current focus is configured in `configs/focus.example.yaml`.
 
@@ -64,6 +69,34 @@ final_score =
 ```
 
 For major AI events, world value can override weak focus fit.
+
+## Source-Aware Recommendations
+
+Source quality is not the same as importance.
+
+Source quality should influence:
+
+- confidence level
+- verification status
+- whether the item can be treated as fact
+- whether the recommendation is "act", "study", "try", "monitor", or "verify"
+
+Current focus should influence:
+
+- suggested next action
+- whether to add the item to the learning map
+- whether to turn the item into a practice task
+- how prominently it appears in focus-specific sections
+
+The recommendation is the intersection of:
+
+```text
+recommendation =
+  broad AI importance
+  + source confidence
+  + learning/practice value
+  + current focus fit
+```
 
 ## Confidence
 

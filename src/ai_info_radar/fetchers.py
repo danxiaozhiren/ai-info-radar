@@ -87,6 +87,7 @@ def _fetch_rss(source: SourceConfig, timeout_seconds: float) -> list[RadarItem]:
                     summary=summary,
                     tags=tags + source.areas,
                     raw_category="rss",
+                    coverage_area=source.coverage_area,
                     evidence_notes=["Parsed from RSS item metadata."],
                 )
             )
@@ -115,6 +116,7 @@ def _fetch_rss(source: SourceConfig, timeout_seconds: float) -> list[RadarItem]:
                 summary=summary,
                 tags=[tag for tag in tags if tag] + list(source.areas),
                 raw_category="atom",
+                coverage_area=source.coverage_area,
                 evidence_notes=["Parsed from Atom feed metadata."],
             )
         )
@@ -146,6 +148,7 @@ def _fetch_github_trending(source: SourceConfig, timeout_seconds: float) -> list
                 summary="Repository appeared on GitHub Trending.",
                 tags=list(source.areas) + ["github", "open source"],
                 raw_category="github_trending",
+                coverage_area=source.coverage_area,
                 evidence_notes=["Parsed from GitHub Trending HTML."],
             )
         )
@@ -176,6 +179,7 @@ def _fetch_web_page(source: SourceConfig, timeout_seconds: float) -> RadarItem:
         summary=summary,
         tags=list(source.areas),
         raw_category="source_page",
+        coverage_area=source.coverage_area,
         evidence_notes=["Fetched source page title and description."],
     )
 

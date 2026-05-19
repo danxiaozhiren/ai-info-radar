@@ -20,10 +20,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--max-items", type=int, default=15, help="Maximum number of ranked items.")
     parser.add_argument(
+        "--date",
+        default=None,
+        help="Radar date in YYYY-MM-DD. Defaults to today in Asia/Shanghai.",
+    )
+    parser.add_argument(
         "--max-age-days",
         type=int,
-        default=30,
-        help="Only include items published/updated within this many days. Use 0 to disable.",
+        default=7,
+        help="Backfill lookback window in days. Use 0 to disable age filtering.",
     )
     parser.add_argument(
         "--max-per-source",
@@ -44,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         max_age_days=args.max_age_days or None,
         max_per_source=args.max_per_source or None,
         timeout_seconds=args.timeout,
+        report_date=args.date,
     )
     write_daily_radar(run, args.output, language=args.language)
     print(f"Wrote {args.output} with {len(run.items)} item(s).")

@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 from .config import load_focus, load_scoring, load_sources
 from .fetchers import fetch_all
 from .models import RadarItem, RadarRun, utc_now_iso
+from .recommendations import enrich_recommendations
 from .reporters import render_daily_radar
 from .scoring import score_items
 from .verification import verify_items
+
+REPORT_TZ = timezone(timedelta(hours=8), name="Asia/Shanghai")
+REPORT_TZ_NAME = "Asia/Shanghai"
 
 
 def run_daily_radar(
@@ -21,21 +25,33 @@ def run_daily_radar(
     max_age_days: int | None = None,
     max_per_source: int | None = None,
     timeout_seconds: float = 10.0,
+    report_date: str | None = None,
 ) -> RadarRun:
     root = Path(repo_root)
     sources = load_sources(sources_path)
     focus = load_focus(focus_path)
     scoring = load_scoring(scoring_path)
 
+    generated_at = utc_now_iso()
+    resolved_report_date = resolve_report_date(report_date, generated_at)
+
     fetched = fetch_all(sources, root, timeout_seconds=timeout_seconds)
     deduped = deduplicate_items(fetched.items)
     recent = filter_by_max_age(deduped, max_age_days=max_age_days)
     scored = score_items(recent, focus, scoring)
     verified = verify_items(scored)
-    ranked = sorted(verified, key=lambda item: item.final_score, reverse=True)
+    recommended = enrich_recommendations(verified)
+    bucketed = assign_daily_buckets(recommended, resolved_report_date)
+    ranked = sorted(bucketed, key=lambda item: item.final_score, reverse=True)
     clustered = cluster_similar_items(ranked)
     selected = select_ranked_items(clustered, max_items=max_items, max_per_source=max_per_source)
-    return RadarRun(items=selected, fetch_errors=fetched.errors, generated_at=utc_now_iso())
+    return RadarRun(
+        items=selected,
+        fetch_errors=fetched.errors,
+        generated_at=generated_at,
+        report_date=resolved_report_date,
+        timezone_name=REPORT_TZ_NAME,
+    )
 
 
 def write_daily_radar(run: RadarRun, output_path: str | Path, language: str = "zh") -> str:
@@ -97,6 +113,33 @@ def filter_by_max_age(
         if age_days <= max_age_days:
             kept.append(item)
     return kept
+
+
+def resolve_report_date(report_date: str | None, generated_at: str | None = None) -> str:
+    if report_date:
+        parsed = _parse_datetime(report_date)
+        if parsed is not None:
+            return _local_date(parsed)
+        return report_date.strip()
+    parsed_generated = _parse_datetime(generated_at) if generated_at else None
+    reference = parsed_generated or datetime.now(timezone.utc)
+    return _local_date(reference)
+
+
+def assign_daily_buckets(items: list[RadarItem], report_date: str) -> list[RadarItem]:
+    for item in items:
+        item.daily_bucket = classify_daily_bucket(item, report_date)
+    return items
+
+
+def classify_daily_bucket(item: RadarItem, report_date: str) -> str:
+    if item.action_type == "verify" or "needs_verification" in item.labels:
+        return "needs_verification"
+
+    published_date = _item_published_date(item)
+    if published_date == report_date:
+        return "today"
+    return "backfill"
 
 
 def cluster_similar_items(ranked_items: list[RadarItem]) -> list[RadarItem]:
@@ -181,6 +224,19 @@ def _parse_datetime(value: str | None) -> datetime | None:
         return datetime.fromisoformat(normalized)
     except ValueError:
         return None
+
+
+def _item_published_date(item: RadarItem) -> str | None:
+    published = _parse_datetime(item.published_time)
+    if published is None:
+        return None
+    return _local_date(published)
+
+
+def _local_date(value: datetime) -> str:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(REPORT_TZ).date().isoformat()
 
 
 def _has_word(text: str, word: str) -> bool:

@@ -57,6 +57,24 @@ The core radar should not be built on processed hot lists or newsletters. Use
 primary sources and stable structured feeds first; use lead sources only to
 notice possible gaps in coverage.
 
+The current registry separates source roles:
+
+- `configs/sources.primary.yaml`: official RSS/Atom feeds and official source
+  pages that can anchor facts.
+- `configs/sources.leads.yaml`: discovery and analysis sources such as AI HOT
+  or reputable media feeds. These should create verification tasks, not final
+  conclusions.
+
+## Coverage Rule
+
+The source list should be broad before it is personalized.
+
+The radar should maintain coverage across the major AI landscape, then use the
+current focus to rank, explain, and recommend actions. A focus such as Browser
+Use or AI Agent can add extra sources and boost related recommendations, but it
+should not remove coverage for models, papers, infrastructure, products,
+open-source projects, evals, safety, policy, or industry signals.
+
 ## Coverage Areas
 
 - models and capabilities
@@ -71,3 +89,23 @@ notice possible gaps in coverage.
 - infrastructure and deployment
 - industry, policy, and adoption
 - China and global AI ecosystems
+
+## Recommendation Inputs
+
+Each item should keep enough source metadata to explain why the radar recommends
+it:
+
+- source tier: primary, strong signal, lead
+- source type: RSS, API, release feed, paper feed, web page, browser observation
+- coverage area: models, research, tools, products, infrastructure, policy,
+  safety, industry, open source, current focus
+- verification status
+- current focus fit
+
+Recommendations should make the reason visible. For example:
+
+- act now: high-importance item from a primary source with clear practical value
+- study: high learning value or strong connection to the current focus
+- try: hands-on source with code, API, demo, or reproducible steps
+- verify: high-interest item from a lead or partially verified source
+- monitor: potentially important but not yet actionable

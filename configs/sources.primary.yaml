@@ -1,8 +1,19 @@
+#
+# Primary-source seed.
+#
+# This registry should stay broad before it is personalized. Focus-specific
+# feeds such as Browser Use, MCP, and Agent SDK releases are useful, but they
+# are only one slice of the radar.
+#
+# Verified public feeds are preferred. Official pages without stable RSS/Atom
+# should be added later as web_page or browser-observation sources.
+#
 sources:
   - name: OpenAI News
     type: rss
     url: https://openai.com/news/rss.xml
     tier: primary
+    coverage_area: models_capabilities
     limit: 12
     areas:
       - models
@@ -12,10 +23,102 @@ sources:
       - industry
     enabled: true
 
+  - name: Google DeepMind Blog
+    type: rss
+    url: https://deepmind.google/blog/rss.xml
+    tier: primary
+    coverage_area: research_papers
+    limit: 12
+    areas:
+      - research
+      - models
+      - multimodal
+      - science
+    enabled: true
+
+  - name: Google AI Blog
+    type: rss
+    url: https://blog.google/technology/ai/rss/
+    tier: primary
+    coverage_area: tools_products
+    limit: 12
+    areas:
+      - models
+      - products
+      - search
+      - industry
+    enabled: true
+
+  - name: Microsoft AI Blog
+    type: rss
+    url: https://blogs.microsoft.com/ai/feed/
+    tier: primary
+    coverage_area: industry
+    limit: 12
+    areas:
+      - products
+      - industry
+      - enterprise
+      - policy
+    enabled: true
+
+  - name: Hugging Face Blog
+    type: rss
+    url: https://huggingface.co/blog/feed.xml
+    tier: primary
+    coverage_area: open_source
+    limit: 12
+    areas:
+      - open_source
+      - models
+      - datasets
+      - developer_tools
+    enabled: true
+
+  - name: Stanford CRFM
+    type: rss
+    url: https://crfm.stanford.edu/feed.xml
+    tier: primary
+    coverage_area: evals_benchmarks
+    limit: 8
+    areas:
+      - research
+      - benchmarks
+      - foundation models
+      - evaluation
+    enabled: true
+
+  - name: NIST Artificial Intelligence
+    type: web_page
+    url: https://www.nist.gov/artificial-intelligence
+    tier: primary
+    coverage_area: safety_policy
+    limit: 1
+    areas:
+      - policy
+      - safety
+      - standards
+      - evaluation
+    enabled: true
+
+  - name: Meta Engineering
+    type: rss
+    url: https://engineering.fb.com/feed/
+    tier: primary
+    coverage_area: infrastructure
+    limit: 10
+    areas:
+      - infrastructure
+      - open_source
+      - developer_tools
+      - systems
+    enabled: true
+
   - name: OpenAI Python SDK Releases
     type: rss
     url: https://github.com/openai/openai-python/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - developer_tools
@@ -28,6 +131,7 @@ sources:
     type: rss
     url: https://github.com/openai/openai-agents-python/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - agents
@@ -41,6 +145,7 @@ sources:
     type: rss
     url: https://github.com/anthropics/anthropic-sdk-python/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - developer_tools
@@ -53,6 +158,7 @@ sources:
     type: rss
     url: https://github.com/browser-use/browser-use/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - browser use
@@ -65,6 +171,7 @@ sources:
     type: rss
     url: https://github.com/modelcontextprotocol/python-sdk/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - mcp
@@ -78,6 +185,7 @@ sources:
     type: rss
     url: https://github.com/modelcontextprotocol/typescript-sdk/releases.atom
     tier: primary
+    coverage_area: developer_ecosystem
     limit: 8
     areas:
       - mcp
@@ -91,6 +199,7 @@ sources:
     type: rss
     url: https://export.arxiv.org/rss/cs.AI
     tier: primary
+    coverage_area: research_papers
     limit: 12
     areas:
       - papers
@@ -103,6 +212,7 @@ sources:
     type: rss
     url: https://export.arxiv.org/rss/cs.CL
     tier: primary
+    coverage_area: research_papers
     limit: 12
     areas:
       - papers
@@ -115,6 +225,7 @@ sources:
     type: rss
     url: https://export.arxiv.org/rss/cs.LG
     tier: primary
+    coverage_area: research_papers
     limit: 12
     areas:
       - papers
