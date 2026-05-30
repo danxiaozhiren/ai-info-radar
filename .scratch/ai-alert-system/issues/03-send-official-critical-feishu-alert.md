@@ -16,13 +16,17 @@ The notifier should accept a prepared message and should not decide classificati
 
 ## Acceptance criteria
 
-- [ ] Classification combines source authority, content type, keyword rules, and event context into a deterministic alert decision.
-- [ ] Official-source critical events can produce one strong alert with short ID, title, source, authority, why it matters, original link, and grouped supporting sources when present.
-- [ ] Feishu webhook secrets are read from environment variables and are not required in regular config.
-- [ ] The alert history records that the event was alerted so it is not sent repeatedly.
-- [ ] The notifier can be tested without network access or real Feishu delivery.
-- [ ] CLI output makes it clear when an alert was sent, skipped, or blocked by missing configuration.
+- [x] Classification combines source authority, content type, keyword rules, and event context into a deterministic alert decision.
+- [x] Official-source critical events can produce one strong alert with short ID, title, source, authority, why it matters, original link, and grouped supporting sources when present.
+- [x] Feishu webhook secrets are read from environment variables and are not required in regular config.
+- [x] The alert history records that the event was alerted so it is not sent repeatedly.
+- [x] The notifier can be tested without network access or real Feishu delivery.
+- [x] CLI output makes it clear when an alert was sent, skipped, or blocked by missing configuration.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
+
+## Comments
+
+- 2026-05-30: Implemented on branch `codex/issue-03-feishu-critical-alert`; verified with unit tests, CLI missing-webhook smoke test, and compile check.

@@ -5,7 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import NormalizedItem, Source, utc_now_iso
+from .models import NormalizedItem, Source, StoredItem, utc_now_iso
 
 
 SCHEMA = """
@@ -47,6 +47,16 @@ CREATE TABLE IF NOT EXISTS source_health (
   ok INTEGER NOT NULL,
   message TEXT NOT NULL,
   item_count INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS alert_history (
+  alert_key TEXT PRIMARY KEY,
+  item_id INTEGER NOT NULL,
+  fingerprint TEXT NOT NULL,
+  notifier TEXT NOT NULL,
+  status TEXT NOT NULL,
+  message TEXT NOT NULL,
+  alerted_at TEXT NOT NULL
 );
 """
 
@@ -154,3 +164,76 @@ class RadarStore:
             (source_id, utc_now_iso(), int(ok), message, item_count),
         )
         self.connection.commit()
+
+    def list_items(self) -> list[StoredItem]:
+        rows = self.connection.execute(
+            """
+            SELECT id, source_id, source_name, vendor, authority_level, content_type,
+                   title, url, detected_at, published_at, summary, fingerprint, trace_json
+            FROM items
+            ORDER BY id
+            """
+        ).fetchall()
+        return [_stored_item_from_row(row) for row in rows]
+
+    def alert_exists(self, alert_key: str) -> bool:
+        row = self.connection.execute(
+            "SELECT 1 FROM alert_history WHERE alert_key = ?",
+            (alert_key,),
+        ).fetchone()
+        return row is not None
+
+    def record_alert(
+        self,
+        *,
+        alert_key: str,
+        item_id: int,
+        fingerprint: str,
+        notifier: str,
+        status: str,
+        message: str,
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO alert_history (
+              alert_key, item_id, fingerprint, notifier, status, message, alerted_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (alert_key, item_id, fingerprint, notifier, status, message, utc_now_iso()),
+        )
+        self.connection.commit()
+
+    def supporting_sources_for(self, *, title: str, exclude_item_id: int) -> tuple[str, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT DISTINCT source_name
+            FROM items
+            WHERE title = ? AND id != ?
+            ORDER BY source_name
+            """,
+            (title, exclude_item_id),
+        ).fetchall()
+        return tuple(row["source_name"] for row in rows)
+
+
+def _stored_item_from_row(row: sqlite3.Row) -> StoredItem:
+    try:
+        trace = json.loads(row["trace_json"])
+    except json.JSONDecodeError:
+        trace = {}
+    return StoredItem(
+        id=int(row["id"]),
+        source_id=row["source_id"],
+        source_name=row["source_name"],
+        vendor=row["vendor"],
+        authority_level=row["authority_level"],
+        content_type=row["content_type"],
+        title=row["title"],
+        url=row["url"],
+        detected_at=row["detected_at"],
+        published_at=row["published_at"],
+        summary=row["summary"],
+        fingerprint=row["fingerprint"],
+        trace=trace,
+    )

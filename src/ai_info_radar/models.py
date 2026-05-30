@@ -49,6 +49,53 @@ class NormalizedItem:
 
 
 @dataclass(frozen=True)
+class StoredItem:
+    id: int
+    source_id: str
+    source_name: str
+    vendor: str
+    authority_level: str
+    content_type: str
+    title: str
+    url: str
+    detected_at: str
+    published_at: str | None
+    summary: str
+    fingerprint: str
+    trace: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AlertDecision:
+    alert_key: str
+    should_alert: bool
+    severity: str
+    score: int
+    reasons: tuple[str, ...]
+    matched_terms: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class AlertMessage:
+    short_id: str
+    title: str
+    source: str
+    authority: str
+    why_it_matters: str
+    original_link: str
+    supporting_sources: tuple[str, ...] = ()
+    matched_terms: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AlertDeliveryResult:
+    ok: bool
+    status_code: int | None = None
+    message: str = ""
+    payload: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class SourcePollResult:
     source_id: str
     ok: bool

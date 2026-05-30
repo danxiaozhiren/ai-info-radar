@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
+from .alerts import send_next_critical_alert
 from .manifest import ManifestError
 from .pipeline import poll_sources
 
@@ -19,9 +21,21 @@ def main(argv: list[str] | None = None) -> int:
     poll_parser.add_argument("--timeout", type=float, default=10.0, help="Fetch timeout in seconds.")
     poll_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
 
+    alert_parser = subparsers.add_parser("alert", help="Send one critical Feishu alert.")
+    alert_parser.add_argument("--db", required=True, help="Path to local SQLite database.")
+    alert_parser.add_argument(
+        "--webhook-env",
+        default="FEISHU_WEBHOOK_URL",
+        help="Environment variable containing the Feishu webhook URL.",
+    )
+    alert_parser.add_argument("--timeout", type=float, default=10.0, help="Webhook timeout in seconds.")
+    alert_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
+
     args = parser.parse_args(argv)
     if args.command == "poll":
         return _run_poll(args)
+    if args.command == "alert":
+        return _run_alert(args)
     parser.error(f"Unsupported command: {args.command}")
     return 2
 
@@ -74,3 +88,32 @@ def _run_poll(args: argparse.Namespace) -> int:
             )
 
     return 0
+
+
+def _run_alert(args: argparse.Namespace) -> int:
+    result = send_next_critical_alert(
+        db_path=Path(args.db),
+        webhook_url=os.environ.get(args.webhook_env),
+        timeout_seconds=args.timeout,
+    )
+
+    summary = {
+        "status": result.status,
+        "sent": result.sent,
+        "message": result.message,
+        "alert_key": result.alert_key,
+        "short_id": result.short_id,
+        "title": result.title,
+    }
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    elif result.status == "sent":
+        print(f"alert sent: {result.short_id} {result.title}")
+    elif result.status == "skipped":
+        print(f"alert skipped: {result.message}")
+    elif result.status == "blocked":
+        print(f"alert blocked: {result.message}; set {args.webhook_env}")
+    else:
+        print(f"alert failed: {result.message}")
+
+    return 0 if result.status in {"sent", "skipped"} else 1
