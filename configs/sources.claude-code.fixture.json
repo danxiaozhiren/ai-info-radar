@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "claude-code-changelog",
+      "name": "Claude Code Changelog",
+      "vendor": "Anthropic",
+      "source_type": "web_page",
+      "authority_level": "official",
+      "url": "https://docs.anthropic.com/en/release-notes/claude-code",
+      "priority": 100,
+      "parsing_strategy": "claude_code_changelog",
+      "content_type": "developer_changelog",
+      "fixture_path": "tests/fixtures/claude_code_changelog.html",
+      "enabled": true
+    }
+  ]
+}

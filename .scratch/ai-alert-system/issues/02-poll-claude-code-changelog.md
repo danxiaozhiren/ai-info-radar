@@ -16,13 +16,17 @@ This slice proves that the system can monitor developer changelogs, not only art
 
 ## Acceptance criteria
 
-- [ ] The curated manifest includes a Claude Code changelog source with an appropriate official authority level and content type.
-- [ ] The extractor identifies newly added changelog entries or version sections as normalized items.
-- [ ] Stored items preserve original links, source identity, detected time, and useful trace metadata.
-- [ ] Re-running the same changelog input is idempotent.
-- [ ] Breaking changes, migrations, deprecations, MCP, agent workflow, and developer-tool terms are detectable by downstream classification inputs.
-- [ ] Tests cover representative changelog fixtures and repeated polling behavior.
+- [x] The curated manifest includes a Claude Code changelog source with an appropriate official authority level and content type.
+- [x] The extractor identifies newly added changelog entries or version sections as normalized items.
+- [x] Stored items preserve original links, source identity, detected time, and useful trace metadata.
+- [x] Re-running the same changelog input is idempotent.
+- [x] Breaking changes, migrations, deprecations, MCP, agent workflow, and developer-tool terms are detectable by downstream classification inputs.
+- [x] Tests cover representative changelog fixtures and repeated polling behavior.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
+
+## Comments
+
+- 2026-05-30: Implemented on branch `codex/issue-02-claude-code-changelog`; verified with unit tests, CLI idempotency smoke test, and compile check.
