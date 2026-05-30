@@ -5,7 +5,7 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import NormalizedItem, Source, StoredItem, utc_now_iso
+from .models import AlertHistoryEntry, NormalizedItem, Source, SourceHealthEntry, StoredItem, utc_now_iso
 
 
 SCHEMA = """
@@ -169,12 +169,23 @@ class RadarStore:
         rows = self.connection.execute(
             """
             SELECT id, source_id, source_name, vendor, authority_level, content_type,
-                   title, url, detected_at, published_at, summary, fingerprint, trace_json
+                   title, url, detected_at, published_at, summary, fingerprint, state, trace_json
             FROM items
             ORDER BY id
             """
         ).fetchall()
         return [_stored_item_from_row(row) for row in rows]
+
+    def item_state_counts(self) -> dict[str, int]:
+        rows = self.connection.execute(
+            """
+            SELECT state, COUNT(*) AS count
+            FROM items
+            GROUP BY state
+            ORDER BY state
+            """
+        ).fetchall()
+        return {row["state"]: int(row["count"]) for row in rows}
 
     def alert_exists(self, alert_key: str) -> bool:
         row = self.connection.execute(
@@ -216,6 +227,67 @@ class RadarStore:
         ).fetchall()
         return tuple(row["source_name"] for row in rows)
 
+    def list_alert_history(self) -> list[AlertHistoryEntry]:
+        rows = self.connection.execute(
+            """
+            SELECT a.alert_key, a.item_id, a.fingerprint, a.notifier, a.status,
+                   a.message, a.alerted_at, i.title, i.url, i.source_name
+            FROM alert_history a
+            JOIN items i ON i.id = a.item_id
+            ORDER BY a.alerted_at DESC, a.item_id DESC
+            """
+        ).fetchall()
+        return [
+            AlertHistoryEntry(
+                alert_key=row["alert_key"],
+                item_id=int(row["item_id"]),
+                fingerprint=row["fingerprint"],
+                notifier=row["notifier"],
+                status=row["status"],
+                message=row["message"],
+                alerted_at=row["alerted_at"],
+                title=row["title"],
+                url=row["url"],
+                source_name=row["source_name"],
+            )
+            for row in rows
+        ]
+
+    def list_source_failures(self) -> list[SourceHealthEntry]:
+        rows = self.connection.execute(
+            """
+            SELECT source_id, checked_at, ok, message, item_count
+            FROM source_health
+            WHERE ok = 0
+            ORDER BY checked_at DESC, id DESC
+            """
+        ).fetchall()
+        return [
+            SourceHealthEntry(
+                source_id=row["source_id"],
+                checked_at=row["checked_at"],
+                ok=bool(row["ok"]),
+                message=row["message"],
+                item_count=int(row["item_count"]),
+            )
+            for row in rows
+        ]
+
+    def mark_new_items_digested(self, item_ids: list[int]) -> int:
+        if not item_ids:
+            return 0
+        placeholders = ", ".join("?" for _ in item_ids)
+        cursor = self.connection.execute(
+            f"""
+            UPDATE items
+            SET state = 'digested'
+            WHERE state = 'new' AND id IN ({placeholders})
+            """,
+            tuple(item_ids),
+        )
+        self.connection.commit()
+        return int(cursor.rowcount)
+
 
 def _stored_item_from_row(row: sqlite3.Row) -> StoredItem:
     try:
@@ -235,5 +307,6 @@ def _stored_item_from_row(row: sqlite3.Row) -> StoredItem:
         published_at=row["published_at"],
         summary=row["summary"],
         fingerprint=row["fingerprint"],
+        state=row["state"],
         trace=trace,
     )

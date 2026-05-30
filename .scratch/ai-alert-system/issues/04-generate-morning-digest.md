@@ -16,14 +16,18 @@ This slice makes the non-interrupting daily workflow useful even when no strong 
 
 ## Acceptance criteria
 
-- [ ] The daily command writes a Markdown report to a local reports location.
-- [ ] The daily command prepares a Feishu-friendly digest message that can be sent through the same webhook mechanism.
-- [ ] The report includes already-alerted items, worth-reading items, saved items, source failures, and filtering statistics.
-- [ ] Original links are retained and full article text is not stored or reproduced.
-- [ ] Items included in the digest receive an appropriate state update without overwriting read, saved, or ignored state incorrectly.
-- [ ] Tests cover digest grouping, saved item listing, alert listing, source failure listing, filtering statistics, and notification payload shape.
+- [x] The daily command writes a Markdown report to a local reports location.
+- [x] The daily command prepares a Feishu-friendly digest message that can be sent through the same webhook mechanism.
+- [x] The report includes already-alerted items, worth-reading items, saved items, source failures, and filtering statistics.
+- [x] Original links are retained and full article text is not stored or reproduced.
+- [x] Items included in the digest receive an appropriate state update without overwriting read, saved, or ignored state incorrectly.
+- [x] Tests cover digest grouping, saved item listing, alert listing, source failure listing, filtering statistics, and notification payload shape.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
 - .scratch/ai-alert-system/issues/03-send-official-critical-feishu-alert.md
+
+## Comments
+
+- 2026-05-30: Implemented on branch `codex/issue-04-morning-digest`; verified with unit tests, CLI digest smoke test, and compile check.

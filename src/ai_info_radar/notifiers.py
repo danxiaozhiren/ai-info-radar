@@ -26,10 +26,14 @@ def build_feishu_payload(message: AlertMessage) -> dict[str, object]:
     if message.matched_terms:
         lines.append(f"Matched terms: {', '.join(message.matched_terms)}")
 
+    return build_feishu_text_payload("\n".join(lines))
+
+
+def build_feishu_text_payload(text: str) -> dict[str, object]:
     return {
         "msg_type": "text",
         "content": {
-            "text": "\n".join(lines),
+            "text": text,
         },
     }
 
@@ -42,6 +46,37 @@ def send_feishu_webhook(
     opener: UrlOpenLike | None = None,
 ) -> AlertDeliveryResult:
     payload = build_feishu_payload(message)
+    return send_feishu_payload(
+        webhook_url,
+        payload,
+        timeout_seconds=timeout_seconds,
+        opener=opener,
+    )
+
+
+def send_feishu_text_webhook(
+    webhook_url: str,
+    text: str,
+    *,
+    timeout_seconds: float = 10.0,
+    opener: UrlOpenLike | None = None,
+) -> AlertDeliveryResult:
+    payload = build_feishu_text_payload(text)
+    return send_feishu_payload(
+        webhook_url,
+        payload,
+        timeout_seconds=timeout_seconds,
+        opener=opener,
+    )
+
+
+def send_feishu_payload(
+    webhook_url: str,
+    payload: dict[str, object],
+    *,
+    timeout_seconds: float = 10.0,
+    opener: UrlOpenLike | None = None,
+) -> AlertDeliveryResult:
     data = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
     req = request.Request(
         webhook_url,

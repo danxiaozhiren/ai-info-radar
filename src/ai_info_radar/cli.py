@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from .alerts import send_next_critical_alert
+from .digest import generate_daily_digest
 from .manifest import ManifestError
 from .pipeline import poll_sources
 
@@ -31,11 +32,24 @@ def main(argv: list[str] | None = None) -> int:
     alert_parser.add_argument("--timeout", type=float, default=10.0, help="Webhook timeout in seconds.")
     alert_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
 
+    daily_parser = subparsers.add_parser("daily", help="Write and optionally send a morning digest.")
+    daily_parser.add_argument("--db", required=True, help="Path to local SQLite database.")
+    daily_parser.add_argument("--reports-dir", default="reports", help="Directory for Markdown reports.")
+    daily_parser.add_argument(
+        "--webhook-env",
+        default="FEISHU_WEBHOOK_URL",
+        help="Environment variable containing the Feishu webhook URL.",
+    )
+    daily_parser.add_argument("--timeout", type=float, default=10.0, help="Webhook timeout in seconds.")
+    daily_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
+
     args = parser.parse_args(argv)
     if args.command == "poll":
         return _run_poll(args)
     if args.command == "alert":
         return _run_alert(args)
+    if args.command == "daily":
+        return _run_daily(args)
     parser.error(f"Unsupported command: {args.command}")
     return 2
 
@@ -117,3 +131,30 @@ def _run_alert(args: argparse.Namespace) -> int:
         print(f"alert failed: {result.message}")
 
     return 0 if result.status in {"sent", "skipped"} else 1
+
+
+def _run_daily(args: argparse.Namespace) -> int:
+    result = generate_daily_digest(
+        db_path=Path(args.db),
+        reports_dir=Path(args.reports_dir),
+        webhook_url=os.environ.get(args.webhook_env),
+        timeout_seconds=args.timeout,
+    )
+
+    summary = {
+        "status": result.status,
+        "sent": result.sent,
+        "message": result.message,
+        "report_path": str(result.report_path),
+        "marked_digested": result.marked_digested,
+    }
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
+    elif result.status == "sent":
+        print(f"daily digest sent: {result.report_path}")
+    elif result.status == "prepared":
+        print(f"daily digest prepared: {result.report_path}; {result.message}")
+    else:
+        print(f"daily digest failed: {result.message}; report={result.report_path}")
+
+    return 0 if result.status in {"sent", "prepared"} else 1

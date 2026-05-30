@@ -62,7 +62,31 @@ class StoredItem:
     published_at: str | None
     summary: str
     fingerprint: str
+    state: str
     trace: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AlertHistoryEntry:
+    alert_key: str
+    item_id: int
+    fingerprint: str
+    notifier: str
+    status: str
+    message: str
+    alerted_at: str
+    title: str
+    url: str
+    source_name: str
+
+
+@dataclass(frozen=True)
+class SourceHealthEntry:
+    source_id: str
+    checked_at: str
+    ok: bool
+    message: str
+    item_count: int
 
 
 @dataclass(frozen=True)
