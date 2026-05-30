@@ -1,0 +1,22 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Local runtime state
+var/
+data/
+logs/
+reports/
+*.sqlite
+*.sqlite3
+*.db
+
+# Local config and secrets
+.env
+.env.*
+*.local.json
+*.local.toml
+*.local.yaml
+*.local.yml
