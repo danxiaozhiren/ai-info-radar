@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "agents-radar-daily",
+      "name": "agents-radar Daily Digest",
+      "vendor": "agents-radar",
+      "source_type": "web_page",
+      "authority_level": "aggregator",
+      "url": "https://duanyytop.github.io/agents-radar",
+      "priority": 40,
+      "parsing_strategy": "agents_radar_digest",
+      "content_type": "aggregator_candidate",
+      "fixture_path": "tests/fixtures/agents_radar_digest.html",
+      "enabled": true
+    }
+  ]
+}

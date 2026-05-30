@@ -215,17 +215,23 @@ class RadarStore:
         )
         self.connection.commit()
 
-    def supporting_sources_for(self, *, title: str, exclude_item_id: int) -> tuple[str, ...]:
-        rows = self.connection.execute(
-            """
-            SELECT DISTINCT source_name
-            FROM items
-            WHERE title = ? AND id != ?
-            ORDER BY source_name
-            """,
-            (title, exclude_item_id),
-        ).fetchall()
-        return tuple(row["source_name"] for row in rows)
+    def supporting_sources_for(
+        self,
+        *,
+        title: str,
+        exclude_item_id: int,
+        target_url: str | None = None,
+    ) -> tuple[str, ...]:
+        supporting_sources: set[str] = set()
+        for item in self.list_items():
+            if item.id == exclude_item_id:
+                continue
+            if item.title == title:
+                supporting_sources.add(item.source_name)
+                continue
+            if target_url and item.trace.get("target_url") == target_url:
+                supporting_sources.add(item.source_name)
+        return tuple(sorted(supporting_sources))
 
     def list_alert_history(self) -> list[AlertHistoryEntry]:
         rows = self.connection.execute(

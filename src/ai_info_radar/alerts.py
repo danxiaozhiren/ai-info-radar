@@ -37,7 +37,11 @@ def send_next_critical_alert(
             return AlertRunResult(status="skipped", message="no unalerted critical item")
 
         item, decision = candidate
-        supporting_sources = store.supporting_sources_for(title=item.title, exclude_item_id=item.id)
+        supporting_sources = store.supporting_sources_for(
+            title=item.title,
+            target_url=item.url,
+            exclude_item_id=item.id,
+        )
         alert_message = build_alert_message(
             item,
             decision,

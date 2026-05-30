@@ -6,8 +6,10 @@ from .models import AlertDecision, StoredItem
 
 
 OFFICIAL_AUTHORITY_LEVELS = {"official", "official_github", "status"}
+CANDIDATE_AUTHORITY_LEVELS = {"aggregator", "media", "social"}
 HIGH_SIGNAL_CONTENT_TYPES = {
     "api_changelog",
+    "aggregator_candidate",
     "developer_changelog",
     "engineering",
     "model_list",
@@ -77,9 +79,12 @@ def classify_item(item: StoredItem) -> AlertDecision:
     score = 0
 
     is_official = item.authority_level in OFFICIAL_AUTHORITY_LEVELS
+    is_candidate_source = item.authority_level in CANDIDATE_AUTHORITY_LEVELS
     if is_official:
         score += 30
         reasons.append(f"official authority: {item.authority_level}")
+    elif is_candidate_source:
+        reasons.append(f"candidate authority: {item.authority_level}")
 
     has_high_signal_context = item.content_type in HIGH_SIGNAL_CONTENT_TYPES
     if has_high_signal_context:
@@ -95,7 +100,7 @@ def classify_item(item: StoredItem) -> AlertDecision:
         reasons.append(rule.reason)
 
     should_alert = is_official and has_high_signal_context and bool(matched_terms)
-    severity = "critical" if should_alert else "none"
+    severity = "critical" if should_alert else "candidate" if is_candidate_source and matched_terms else "none"
     return AlertDecision(
         alert_key=f"item:{item.fingerprint}",
         should_alert=should_alert,

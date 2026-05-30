@@ -19,6 +19,8 @@ def extract_items(fetched: FetchedSource) -> list[NormalizedItem]:
         return extract_anthropic_engineering(fetched)
     if strategy == "claude_code_changelog":
         return extract_claude_code_changelog(fetched)
+    if strategy == "agents_radar_digest":
+        return extract_agents_radar_digest(fetched)
     raise ExtractionError(f"Unsupported parsing strategy: {strategy}")
 
 
@@ -122,6 +124,59 @@ def extract_claude_code_changelog(fetched: FetchedSource) -> list[NormalizedItem
     return items
 
 
+def extract_agents_radar_digest(fetched: FetchedSource) -> list[NormalizedItem]:
+    parser = _AgentsRadarDigestParser(fetched.final_url)
+    parser.feed(fetched.body)
+    cards = parser.cards
+    if not cards:
+        raise ExtractionError(f"No agents-radar candidate items found for {fetched.source.id}.")
+
+    items: list[NormalizedItem] = []
+    for position, card in enumerate(cards, start=1):
+        title = card.title.strip()
+        url = card.url.strip()
+        if not title or not url:
+            continue
+        summary = card.summary.strip()
+        published_at = card.published_at.strip() or None
+        fingerprint = content_fingerprint(
+            title=title,
+            url=url,
+            published_at=published_at,
+            summary=summary,
+            vendor=fetched.source.vendor,
+            content_type=fetched.source.content_type,
+        )
+        trace = {
+            "parser": fetched.source.parsing_strategy,
+            "position": position,
+            "fetched_url": fetched.final_url,
+        }
+        if card.target_url:
+            trace["target_url"] = card.target_url
+        if card.target_source:
+            trace["target_source"] = card.target_source
+        items.append(
+            NormalizedItem(
+                source_id=fetched.source.id,
+                source_name=fetched.source.name,
+                vendor=fetched.source.vendor,
+                authority_level=fetched.source.authority_level,
+                content_type=fetched.source.content_type,
+                title=title,
+                url=url,
+                detected_at=fetched.fetched_at,
+                published_at=published_at,
+                summary=summary,
+                fingerprint=fingerprint,
+                trace=trace,
+            )
+        )
+    if not items:
+        raise ExtractionError(f"agents-radar candidate cards were incomplete for {fetched.source.id}.")
+    return items
+
+
 @dataclass
 class _ArticleCard:
     title: str = ""
@@ -136,6 +191,16 @@ class _ChangelogEntry:
     title: str = ""
     published_at: str = ""
     summary_parts: list[str] = field(default_factory=list)
+
+
+@dataclass
+class _AggregatorCard:
+    title: str = ""
+    url: str = ""
+    target_url: str = ""
+    target_source: str = ""
+    published_at: str = ""
+    summary: str = ""
 
 
 class _AnthropicEngineeringParser(HTMLParser):
@@ -294,6 +359,106 @@ class _ClaudeCodeChangelogParser(HTMLParser):
             "data-changelog-entry" in attr
             or "changelog-entry" in classes
             or attr.get("data-testid") == "changelog-entry"
+        )
+
+
+class _AgentsRadarDigestParser(HTMLParser):
+    def __init__(self, base_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.cards: list[_AggregatorCard] = []
+        self._card: _AggregatorCard | None = None
+        self._card_depth = 0
+        self._capture: str | None = None
+        self._capture_end_tag: str | None = None
+        self._buffer: list[str] = []
+        self._ignored_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr = {key: value or "" for key, value in attrs}
+        if tag in {"script", "style", "footer", "nav", "aside"}:
+            self._ignored_depth += 1
+            return
+        if self._ignored_depth:
+            return
+
+        if self._card is None and self._is_card_container(tag, attr):
+            target_url = attr.get("data-target-url", "").strip()
+            self._card = _AggregatorCard(
+                target_url=urljoin(self.base_url, target_url) if target_url else "",
+                target_source=attr.get("data-target-source", "").strip(),
+            )
+            self._card_depth = 1
+            return
+
+        if self._card is None:
+            return
+
+        self._card_depth += 1
+        if tag == "a":
+            href = attr.get("href", "").strip()
+            role = attr.get("data-link-role", "").strip()
+            if href and role == "aggregator" and not self._card.url:
+                self._card.url = urljoin(self.base_url, href)
+            elif href and role == "target" and not self._card.target_url:
+                self._card.target_url = urljoin(self.base_url, href)
+            elif href and not self._card.url:
+                self._card.url = urljoin(self.base_url, href)
+
+        if self._capture:
+            return
+
+        if tag in {"h1", "h2", "h3", "h4"} and not self._card.title:
+            self._begin_capture("title", tag)
+        elif tag == "time" and not self._card.published_at:
+            datetime_value = attr.get("datetime", "").strip()
+            if datetime_value:
+                self._card.published_at = datetime_value
+            else:
+                self._begin_capture("published_at", tag)
+        elif tag == "p" and not self._card.summary:
+            self._begin_capture("summary", tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._ignored_depth:
+            if tag in {"script", "style", "footer", "nav", "aside"}:
+                self._ignored_depth -= 1
+            return
+
+        if self._card is None:
+            return
+
+        if self._capture and tag == self._capture_end_tag:
+            captured = _normalize_text("".join(self._buffer))
+            if captured:
+                setattr(self._card, self._capture, captured)
+            self._capture = None
+            self._capture_end_tag = None
+            self._buffer = []
+
+        self._card_depth -= 1
+        if self._card_depth == 0:
+            self.cards.append(self._card)
+            self._card = None
+
+    def handle_data(self, data: str) -> None:
+        if self._ignored_depth or not self._capture:
+            return
+        self._buffer.append(data)
+
+    def _begin_capture(self, field: str, end_tag: str) -> None:
+        self._capture = field
+        self._capture_end_tag = end_tag
+        self._buffer = []
+
+    def _is_card_container(self, tag: str, attr: dict[str, str]) -> bool:
+        if tag not in {"article", "section", "div"}:
+            return False
+        classes = set(attr.get("class", "").split())
+        return (
+            "data-aggregator-item" in attr
+            or "agents-radar-item" in classes
+            or attr.get("data-testid") == "agents-radar-item"
         )
 
 

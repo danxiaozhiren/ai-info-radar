@@ -21,7 +21,11 @@ REQUIRED_FIELDS = {
 
 SUPPORTED_AUTHORITY_LEVELS = {"official", "official_github", "status", "aggregator", "media", "social"}
 SUPPORTED_SOURCE_TYPES = {"web_page", "rss", "atom", "github_release", "status_api"}
-SUPPORTED_PARSING_STRATEGIES = {"anthropic_engineering_index", "claude_code_changelog"}
+SUPPORTED_PARSING_STRATEGIES = {
+    "agents_radar_digest",
+    "anthropic_engineering_index",
+    "claude_code_changelog",
+}
 
 
 class ManifestError(ValueError):

@@ -16,13 +16,17 @@ This slice establishes the first durable vertical path for the AI information ga
 
 ## Acceptance criteria
 
-- [ ] A curated Anthropic Engineering source entry can be loaded and validated by the source manifest.
-- [ ] Running the poll command stores normalized items with source, vendor, content type, original URL, detected time, published time when available, fingerprint, and trace metadata.
-- [ ] Re-running the poll command against the same fixture or live response does not duplicate stored items.
-- [ ] HTML styling, scripts, image metadata, footer content, and recommendation blocks do not affect the content fingerprint.
-- [ ] Source failures are recorded without stopping the entire poll run.
-- [ ] Tests cover manifest validation, extraction, fingerprinting, SQLite idempotency, and CLI behavior with fixtures.
+- [x] A curated Anthropic Engineering source entry can be loaded and validated by the source manifest.
+- [x] Running the poll command stores normalized items with source, vendor, content type, original URL, detected time, published time when available, fingerprint, and trace metadata.
+- [x] Re-running the poll command against the same fixture or live response does not duplicate stored items.
+- [x] HTML styling, scripts, image metadata, footer content, and recommendation blocks do not affect the content fingerprint.
+- [x] Source failures are recorded without stopping the entire poll run.
+- [x] Tests cover manifest validation, extraction, fingerprinting, SQLite idempotency, and CLI behavior with fixtures.
 
 ## Blocked by
 
 None - can start immediately
+
+## Comments
+
+- 2026-05-30: Implemented on branch `codex/issue-01-anthropic-poll`; verified with unit tests, CLI idempotency smoke test, and compile check.
