@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from .classifier import classify_item
+from .classifier import ClassificationRules, classify_item
 from .events import merge_events
 from .models import AlertDecision, AlertDeliveryResult, AlertMessage, StoredItem
 from .notifiers import send_feishu_webhook
@@ -29,12 +29,13 @@ def send_next_critical_alert(
     *,
     db_path: str | Path,
     webhook_url: str | None,
+    rules: ClassificationRules | None = None,
     sender: AlertSender | None = None,
     timeout_seconds: float = 10.0,
 ) -> AlertRunResult:
     with RadarStore(db_path) as store:
         merge_events(store)
-        candidate = _select_candidate(store)
+        candidate = _select_candidate(store, rules=rules)
         if candidate is None:
             return AlertRunResult(status="skipped", message="no unalerted critical item")
 
@@ -112,7 +113,11 @@ def build_alert_message(
     )
 
 
-def _select_candidate(store: RadarStore) -> tuple[str, StoredItem, AlertDecision] | None:
+def _select_candidate(
+    store: RadarStore,
+    *,
+    rules: ClassificationRules | None = None,
+) -> tuple[str, StoredItem, AlertDecision] | None:
     candidates: list[tuple[str, StoredItem, AlertDecision]] = []
     for event in store.list_events():
         alert_key = f"event:{event.event_key}"
@@ -122,7 +127,7 @@ def _select_candidate(store: RadarStore) -> tuple[str, StoredItem, AlertDecision
         for item in store.event_items(event.event_key):
             if item.state != "new":
                 continue
-            decision = classify_item(item)
+            decision = classify_item(item, rules)
             if decision.should_alert:
                 event_candidates.append((item, decision))
         if not event_candidates:

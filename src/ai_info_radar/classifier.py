@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 from .models import AlertDecision, StoredItem
 
@@ -24,6 +27,18 @@ class KeywordRule:
     terms: tuple[str, ...]
     score: int
     reason: str
+
+
+@dataclass(frozen=True)
+class ClassificationRules:
+    official_authority_levels: tuple[str, ...]
+    candidate_authority_levels: tuple[str, ...]
+    high_signal_content_types: tuple[str, ...]
+    keyword_rules: tuple[KeywordRule, ...]
+
+
+class RulesError(ValueError):
+    pass
 
 
 KEYWORD_RULES = (
@@ -105,27 +120,49 @@ KEYWORD_RULES = (
     ),
 )
 
+DEFAULT_RULES = ClassificationRules(
+    official_authority_levels=tuple(sorted(OFFICIAL_AUTHORITY_LEVELS)),
+    candidate_authority_levels=tuple(sorted(CANDIDATE_AUTHORITY_LEVELS)),
+    high_signal_content_types=tuple(sorted(HIGH_SIGNAL_CONTENT_TYPES)),
+    keyword_rules=KEYWORD_RULES,
+)
 
-def classify_item(item: StoredItem) -> AlertDecision:
+
+def load_rules(path: str | Path | None = None) -> ClassificationRules:
+    if path is None:
+        return DEFAULT_RULES
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise RulesError("Rules config must be a JSON object.")
+    return ClassificationRules(
+        official_authority_levels=_string_tuple(raw, "official_authority_levels"),
+        candidate_authority_levels=_string_tuple(raw, "candidate_authority_levels"),
+        high_signal_content_types=_string_tuple(raw, "high_signal_content_types"),
+        keyword_rules=_keyword_rules(raw.get("keyword_rules")),
+    )
+
+
+def classify_item(item: StoredItem, rules: ClassificationRules | None = None) -> AlertDecision:
+    active_rules = rules or DEFAULT_RULES
     text = "\n".join((item.title, item.summary, item.content_type)).lower()
     matched_terms: list[str] = []
     reasons: list[str] = []
     score = 0
 
-    is_official = item.authority_level in OFFICIAL_AUTHORITY_LEVELS
-    is_candidate_source = item.authority_level in CANDIDATE_AUTHORITY_LEVELS
+    is_official = item.authority_level in active_rules.official_authority_levels
+    is_candidate_source = item.authority_level in active_rules.candidate_authority_levels
     if is_official:
         score += 30
         reasons.append(f"official authority: {item.authority_level}")
     elif is_candidate_source:
         reasons.append(f"candidate authority: {item.authority_level}")
 
-    has_high_signal_context = item.content_type in HIGH_SIGNAL_CONTENT_TYPES
+    has_high_signal_context = item.content_type in active_rules.high_signal_content_types
     if has_high_signal_context:
         score += 12
         reasons.append(f"high-signal content type: {item.content_type}")
 
-    for rule in KEYWORD_RULES:
+    for rule in active_rules.keyword_rules:
         found_terms = tuple(term for term in rule.terms if term in text)
         if not found_terms:
             continue
@@ -143,3 +180,41 @@ def classify_item(item: StoredItem) -> AlertDecision:
         reasons=tuple(dict.fromkeys(reasons)),
         matched_terms=tuple(dict.fromkeys(matched_terms)),
     )
+
+
+def _string_tuple(raw: dict[str, Any], field: str) -> tuple[str, ...]:
+    value = raw.get(field)
+    if not isinstance(value, list):
+        raise RulesError(f"Rules field '{field}' must be a list.")
+    strings = tuple(_clean_string(item, field) for item in value)
+    if not strings:
+        raise RulesError(f"Rules field '{field}' cannot be empty.")
+    return strings
+
+
+def _keyword_rules(value: Any) -> tuple[KeywordRule, ...]:
+    if not isinstance(value, list) or not value:
+        raise RulesError("Rules field 'keyword_rules' must be a non-empty list.")
+    rules: list[KeywordRule] = []
+    for index, entry in enumerate(value):
+        if not isinstance(entry, dict):
+            raise RulesError(f"Keyword rule at index {index} must be an object.")
+        name = _clean_string(entry.get("name"), f"keyword_rules[{index}].name")
+        terms_value = entry.get("terms")
+        if not isinstance(terms_value, list) or not terms_value:
+            raise RulesError(f"Keyword rule '{name}' terms must be a non-empty list.")
+        terms = tuple(_clean_string(term, f"keyword_rules[{index}].terms") for term in terms_value)
+        try:
+            score = int(entry["score"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RulesError(f"Keyword rule '{name}' score must be an integer.") from exc
+        reason = _clean_string(entry.get("reason"), f"keyword_rules[{index}].reason")
+        rules.append(KeywordRule(name=name, terms=terms, score=score, reason=reason))
+    return tuple(rules)
+
+
+def _clean_string(value: Any, field: str) -> str:
+    cleaned = str(value).strip().lower() if value is not None else ""
+    if not cleaned:
+        raise RulesError(f"Rules field '{field}' cannot be empty.")
+    return cleaned

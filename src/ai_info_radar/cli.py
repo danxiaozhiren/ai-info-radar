@@ -6,10 +6,18 @@ import os
 from pathlib import Path
 
 from .alerts import send_next_critical_alert
+from .classifier import RulesError, load_rules
 from .digest import generate_daily_digest
 from .manifest import ManifestError
 from .models import StoredItem
 from .pipeline import poll_sources
+from .rule_engine import (
+    ReclassifyUpdate,
+    RuleTestItem,
+    reclassify_recent_items,
+    summarize_outcomes,
+    test_recent_items,
+)
 from .store import ITEM_STATES, ItemStateError, ItemStateUpdate, RadarStore
 
 
@@ -32,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Environment variable containing the Feishu webhook URL.",
     )
     alert_parser.add_argument("--timeout", type=float, default=10.0, help="Webhook timeout in seconds.")
+    alert_parser.add_argument("--rules", help="Optional JSON rules config.")
     alert_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
 
     daily_parser = subparsers.add_parser("daily", help="Write and optionally send a morning digest.")
@@ -69,6 +78,23 @@ def main(argv: list[str] | None = None) -> int:
         mark_parser.add_argument("--json", action="store_true", help="Print machine-readable update summary.")
         mark_parser.set_defaults(target_state=target_state)
 
+    rule_test_parser = subparsers.add_parser("rule-test", help="Preview rule outcomes without side effects.")
+    rule_test_parser.add_argument("--db", required=True, help="Path to local SQLite database.")
+    rule_test_parser.add_argument("--rules", help="Optional JSON rules config.")
+    rule_test_parser.add_argument("--limit", type=int, default=20, help="Number of recent items to inspect.")
+    rule_test_parser.add_argument("--json", action="store_true", help="Print machine-readable rule report.")
+
+    reclassify_parser = subparsers.add_parser("reclassify", help="Recompute item states from current rules.")
+    reclassify_parser.add_argument("--db", required=True, help="Path to local SQLite database.")
+    reclassify_parser.add_argument("--rules", help="Optional JSON rules config.")
+    reclassify_parser.add_argument("--limit", type=int, default=20, help="Number of recent items to reclassify.")
+    reclassify_parser.add_argument(
+        "--include-user-states",
+        action="store_true",
+        help="Also overwrite read, saved, and ignored items.",
+    )
+    reclassify_parser.add_argument("--json", action="store_true", help="Print machine-readable summary.")
+
     args = parser.parse_args(argv)
     if args.command == "poll":
         return _run_poll(args)
@@ -78,6 +104,10 @@ def main(argv: list[str] | None = None) -> int:
         return _run_daily(args)
     if args.command == "items":
         return _run_items(args)
+    if args.command == "rule-test":
+        return _run_rule_test(args)
+    if args.command == "reclassify":
+        return _run_reclassify(args)
     parser.error(f"Unsupported command: {args.command}")
     return 2
 
@@ -133,9 +163,16 @@ def _run_poll(args: argparse.Namespace) -> int:
 
 
 def _run_alert(args: argparse.Namespace) -> int:
+    try:
+        rules = load_rules(args.rules)
+    except (RulesError, OSError, ValueError) as exc:
+        print(f"rules error: {exc}")
+        return 2
+
     result = send_next_critical_alert(
         db_path=Path(args.db),
         webhook_url=os.environ.get(args.webhook_env),
+        rules=rules,
         timeout_seconds=args.timeout,
     )
 
@@ -281,3 +318,116 @@ def _item_update_summary(update: ItemStateUpdate) -> dict[str, object]:
     summary["previous_state"] = update.previous_state
     summary["state"] = update.new_state
     return summary
+
+
+def _run_rule_test(args: argparse.Namespace) -> int:
+    try:
+        rules = load_rules(args.rules)
+        with RadarStore(Path(args.db)) as store:
+            items = test_recent_items(store, rules=rules, limit=args.limit)
+    except (ItemStateError, RulesError, OSError, ValueError) as exc:
+        print(f"rules error: {exc}")
+        return 2
+
+    summary = summarize_outcomes(items)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "count": len(items),
+                    "summary": summary,
+                    "items": [_rule_test_summary(item) for item in items],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    print(f"rule-test: count={len(items)}")
+    print(_format_outcome_summary(summary))
+    for item in items:
+        stored = item.item
+        print(
+            f"- #{stored.id} {stored.fingerprint[:10]} outcome={item.outcome} "
+            f"severity={item.decision.severity} score={item.decision.score} "
+            f"state={stored.state} {stored.title}"
+        )
+    return 0
+
+
+def _run_reclassify(args: argparse.Namespace) -> int:
+    try:
+        rules = load_rules(args.rules)
+        with RadarStore(Path(args.db)) as store:
+            updates = reclassify_recent_items(
+                store,
+                rules=rules,
+                limit=args.limit,
+                include_user_states=args.include_user_states,
+            )
+    except (ItemStateError, RulesError, OSError, ValueError) as exc:
+        print(f"rules error: {exc}")
+        return 2
+
+    changed = sum(1 for update in updates if update.changed)
+    preserved = sum(1 for update in updates if update.preserved)
+    summary = summarize_outcomes(updates)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "changed": changed,
+                    "count": len(updates),
+                    "preserved": preserved,
+                    "summary": summary,
+                    "items": [_reclassify_summary(update) for update in updates],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    print(f"reclassified: count={len(updates)} changed={changed} preserved={preserved}")
+    print(_format_outcome_summary(summary))
+    for update in updates:
+        item = update.item
+        print(
+            f"- #{item.id} {item.fingerprint[:10]} {update.previous_state}->{update.new_state} "
+            f"outcome={update.outcome} severity={update.decision.severity} {item.title}"
+        )
+    return 0
+
+
+def _rule_test_summary(item: RuleTestItem) -> dict[str, object]:
+    stored = item.item
+    return {
+        **_item_summary(stored),
+        "matched_terms": list(item.decision.matched_terms),
+        "outcome": item.outcome,
+        "reasons": list(item.decision.reasons),
+        "score": item.decision.score,
+        "severity": item.decision.severity,
+        "would_alert": item.decision.should_alert,
+    }
+
+
+def _reclassify_summary(update: ReclassifyUpdate) -> dict[str, object]:
+    return {
+        **_rule_test_summary(
+            RuleTestItem(
+                item=update.item,
+                decision=update.decision,
+                outcome=update.outcome,
+            )
+        ),
+        "changed": update.changed,
+        "new_state": update.new_state,
+        "preserved": update.preserved,
+        "previous_state": update.previous_state,
+    }
+
+
+def _format_outcome_summary(summary: dict[str, int]) -> str:
+    return "summary: " + " ".join(f"{key}={value}" for key, value in sorted(summary.items()))

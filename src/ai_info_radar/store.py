@@ -230,6 +230,21 @@ class RadarStore:
         ).fetchall()
         return [_stored_item_from_row(row) for row in rows]
 
+    def list_recent_items(self, *, limit: int = 20) -> list[StoredItem]:
+        if limit < 1:
+            raise ItemStateError("Recent item limit must be positive.")
+        rows = self.connection.execute(
+            """
+            SELECT id, source_id, source_name, vendor, authority_level, content_type,
+                   title, url, detected_at, published_at, summary, fingerprint, state, trace_json
+            FROM items
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [_stored_item_from_row(row) for row in rows]
+
     def item_state_counts(self) -> dict[str, int]:
         rows = self.connection.execute(
             """
@@ -245,6 +260,13 @@ class RadarStore:
         row = self.connection.execute(
             "SELECT 1 FROM alert_history WHERE alert_key = ?",
             (alert_key,),
+        ).fetchone()
+        return row is not None
+
+    def item_alert_exists(self, item_id: int) -> bool:
+        row = self.connection.execute(
+            "SELECT 1 FROM alert_history WHERE item_id = ?",
+            (item_id,),
         ).fetchone()
         return row is not None
 
@@ -565,6 +587,15 @@ class RadarStore:
             )
         self.connection.commit()
         return updates
+
+    def set_item_state_by_id(self, item_id: int, state: str) -> None:
+        if state not in ITEM_STATES:
+            raise ItemStateError(f"Unsupported item state: {state}")
+        self.connection.execute(
+            "UPDATE items SET state = ? WHERE id = ?",
+            (state, item_id),
+        )
+        self.connection.commit()
 
     def _item_by_id(self, item_id: int) -> StoredItem | None:
         row = self.connection.execute(
