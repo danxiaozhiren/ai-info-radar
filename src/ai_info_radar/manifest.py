@@ -17,6 +17,7 @@ REQUIRED_FIELDS = {
     "priority",
     "parsing_strategy",
     "content_type",
+    "enabled",
 }
 
 SUPPORTED_AUTHORITY_LEVELS = {"official", "official_github", "status", "aggregator", "media", "social"}
@@ -26,6 +27,7 @@ SUPPORTED_PARSING_STRATEGIES = {
     "anthropic_engineering_index",
     "claude_code_changelog",
     "official_model_pricing",
+    "placeholder",
     "statuspage_incidents",
 }
 
@@ -34,7 +36,7 @@ class ManifestError(ValueError):
     pass
 
 
-def load_sources(path: str | Path) -> list[Source]:
+def load_sources(path: str | Path, *, include_disabled: bool = False) -> list[Source]:
     manifest_path = Path(path)
     raw = json.loads(manifest_path.read_text(encoding="utf-8"))
     entries = raw.get("sources")
@@ -46,6 +48,8 @@ def load_sources(path: str | Path) -> list[Source]:
     duplicate_ids = sorted({source_id for source_id in ids if ids.count(source_id) > 1})
     if duplicate_ids:
         raise ManifestError(f"Duplicate source ids: {', '.join(duplicate_ids)}")
+    if include_disabled:
+        return sources
     return [source for source in sources if source.enabled]
 
 
@@ -77,6 +81,8 @@ def _source_from_mapping(entry: Any, index: int) -> Source:
         priority = int(entry["priority"])
     except (TypeError, ValueError) as exc:
         raise ManifestError(f"Source {source_id} priority must be an integer.") from exc
+    if not isinstance(entry["enabled"], bool):
+        raise ManifestError(f"Source {source_id} enabled must be a boolean.")
 
     return Source(
         id=source_id,
@@ -89,7 +95,7 @@ def _source_from_mapping(entry: Any, index: int) -> Source:
         parsing_strategy=parsing_strategy,
         content_type=content_type,
         fixture_path=_optional_string(entry.get("fixture_path")),
-        enabled=bool(entry.get("enabled", True)),
+        enabled=entry["enabled"],
     )
 
 
