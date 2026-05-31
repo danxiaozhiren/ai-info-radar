@@ -16,7 +16,12 @@ reports/
 # Local config and secrets
 .env
 .env.*
+.envrc
+secrets/
 *.local.json
 *.local.toml
 *.local.yaml
 *.local.yml
+*.local.plist
+*.secret
+*.key
