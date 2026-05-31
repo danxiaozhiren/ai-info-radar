@@ -162,7 +162,7 @@ class EventMergeCooldownIssueTests(unittest.TestCase):
             db_path = Path(temp_dir) / "radar.sqlite"
             official = self._item(
                 title="Claude Code 1.2.0",
-                url="https://docs.anthropic.com/en/release-notes/claude-code#v1-2-0",
+                url="https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-0",
                 summary="Breaking change: migrated project settings to the new hooks schema.",
             )
             aggregator = self._item(

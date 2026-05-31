@@ -53,7 +53,7 @@ class AggregatorCandidateIssueTests(unittest.TestCase):
         self.assertEqual(items[0].content_type, "aggregator_candidate")
         self.assertEqual(
             items[0].trace["target_url"],
-            "https://docs.anthropic.com/en/release-notes/claude-code#v1-2-0",
+            "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-0",
         )
         self.assertEqual(items[0].trace["target_source"], "Anthropic")
         self.assertIn("deprecated legacy slash-command", items[0].summary)

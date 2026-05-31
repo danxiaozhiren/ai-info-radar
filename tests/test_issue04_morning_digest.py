@@ -41,7 +41,7 @@ class MorningDigestIssueTests(unittest.TestCase):
             self.assertIn("# AI Radar Morning Digest - 2026-05-30", report)
             self.assertIn("## Already Alerted", report)
             self.assertIn("Claude Code 1.2.0", report)
-            self.assertIn("https://docs.anthropic.com/en/release-notes/claude-code#v1-2-0", report)
+            self.assertIn("https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-0", report)
             self.assertIn("## Worth Reading", report)
             self.assertIn("Claude Code 1.2.3", report)
             self.assertIn("## Saved", report)

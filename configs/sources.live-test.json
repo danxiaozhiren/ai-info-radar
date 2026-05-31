@@ -1,0 +1,64 @@
+{
+  "sources": [
+    {
+      "id": "anthropic-engineering",
+      "name": "Anthropic Engineering",
+      "vendor": "Anthropic",
+      "source_type": "web_page",
+      "authority_level": "official",
+      "url": "https://www.anthropic.com/engineering",
+      "priority": 95,
+      "parsing_strategy": "anthropic_engineering_index",
+      "content_type": "engineering",
+      "enabled": true
+    },
+    {
+      "id": "anthropic-claude-code-changelog",
+      "name": "Claude Code Changelog",
+      "vendor": "Anthropic",
+      "source_type": "web_page",
+      "authority_level": "official",
+      "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
+      "priority": 100,
+      "parsing_strategy": "claude_code_changelog",
+      "content_type": "developer_changelog",
+      "enabled": true
+    },
+    {
+      "id": "anthropic-status-incidents",
+      "name": "Anthropic Status Incidents",
+      "vendor": "Anthropic",
+      "source_type": "status_api",
+      "authority_level": "status",
+      "url": "https://status.anthropic.com/api/v2/incidents.json",
+      "priority": 110,
+      "parsing_strategy": "statuspage_incidents",
+      "content_type": "status_incident",
+      "enabled": true
+    },
+    {
+      "id": "openai-status-incidents",
+      "name": "OpenAI Status Incidents",
+      "vendor": "OpenAI",
+      "source_type": "status_api",
+      "authority_level": "status",
+      "url": "https://status.openai.com/api/v2/incidents.json",
+      "priority": 110,
+      "parsing_strategy": "statuspage_incidents",
+      "content_type": "status_incident",
+      "enabled": true
+    },
+    {
+      "id": "openai-api-pricing",
+      "name": "OpenAI API Pricing",
+      "vendor": "OpenAI",
+      "source_type": "web_page",
+      "authority_level": "official",
+      "url": "https://developers.openai.com/api/docs/pricing",
+      "priority": 105,
+      "parsing_strategy": "official_model_pricing",
+      "content_type": "pricing",
+      "enabled": true
+    }
+  ]
+}

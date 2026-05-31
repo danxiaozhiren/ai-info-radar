@@ -9,35 +9,36 @@
     <nav>Docs API Pricing Changelog</nav>
     <main>
       <h1>Pricing</h1>
-      <section
-        data-model-pricing
-        id="gpt-5-mini"
-        data-model="gpt-5-mini"
-        data-input-price="$0.25 / 1M tokens"
-        data-output-price="$2.00 / 1M tokens"
-        data-context-window="400K tokens"
-        data-capabilities="text, vision, tool calling"
-        data-rate-limit="standard tier"
-        data-effective-date="2026-05-31"
-      >
-        <h2 data-field="model">gpt-5-mini</h2>
-      </section>
-
-      <section
-        data-model-pricing
-        id="gpt-4o-legacy"
-        data-model="gpt-4o"
-        data-input-price="$2.50 / 1M tokens"
-        data-output-price="$10.00 / 1M tokens"
-        data-context-window="128K tokens"
-        data-capabilities="text, vision, audio"
-        data-rate-limit="legacy tier"
-        data-deprecation="Deprecated on 2026-08-31"
-        data-migration="Migrate to gpt-5-mini for lower pricing and longer context"
-        data-effective-date="2026-05-31"
-      >
-        <h2 data-field="model">gpt-4o</h2>
-      </section>
+      <h2 id="text-tokens">Flagship models</h2>
+      <small>Prices per 1M tokens.</small>
+      <table>
+        <tr>
+          <td>Short context</td><td></td><td></td><td></td>
+          <td>Long context</td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Model</td><td>Input</td><td>Cached input</td><td>Output</td>
+          <td>Input</td><td>Cached input</td><td>Output</td>
+        </tr>
+        <tr>
+          <td><span>gpt-5-mini</span></td>
+          <td><span>$0.25</span></td>
+          <td><span>$0.025</span></td>
+          <td><span>$2.00</span></td>
+          <td><span>$0.50</span></td>
+          <td><span>$0.05</span></td>
+          <td><span>$3.00</span></td>
+        </tr>
+        <tr>
+          <td><span>gpt-4o</span></td>
+          <td><span>$2.50</span></td>
+          <td><span>$1.25</span></td>
+          <td><span>$10.00</span></td>
+          <td><span>$5.00</span></td>
+          <td><span>$2.50</span></td>
+          <td><span>$15.00</span></td>
+        </tr>
+      </table>
     </main>
     <aside>
       <p>Recommended guides and marketing content should not affect fingerprints.</p>

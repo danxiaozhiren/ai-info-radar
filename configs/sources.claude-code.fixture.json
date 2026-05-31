@@ -6,11 +6,11 @@
       "vendor": "Anthropic",
       "source_type": "web_page",
       "authority_level": "official",
-      "url": "https://docs.anthropic.com/en/release-notes/claude-code",
+      "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
       "priority": 100,
       "parsing_strategy": "claude_code_changelog",
       "content_type": "developer_changelog",
-      "fixture_path": "tests/fixtures/claude_code_changelog.html",
+      "fixture_path": "tests/fixtures/claude_code_changelog.md",
       "enabled": true
     }
   ]

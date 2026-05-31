@@ -12,35 +12,36 @@
         <h1>API Pricing</h1>
         <p>Updated page introduction that is not part of model pricing.</p>
       </header>
-      <section class="model-pricing-row" id="gpt-5-mini">
-        <h2 data-field="model">gpt-5-mini</h2>
-        <p data-field="input_price">$0.25 / 1M tokens</p>
-        <p data-field="output_price">$2.00 / 1M tokens</p>
-        <p data-field="context_window">400K tokens</p>
-        <ul>
-          <li data-field="capability">text</li>
-          <li data-field="capability">vision</li>
-          <li data-field="capability">tool calling</li>
-        </ul>
-        <p data-field="rate_limit">standard tier</p>
-        <time data-field="effective_date">2026-05-31</time>
-      </section>
-
-      <section class="model-pricing-row" id="gpt-4o-legacy">
-        <h2 data-field="model">gpt-4o</h2>
-        <p data-field="input_price">$2.50 / 1M tokens</p>
-        <p data-field="output_price">$10.00 / 1M tokens</p>
-        <p data-field="context_window">128K tokens</p>
-        <ul>
-          <li data-field="capability">text</li>
-          <li data-field="capability">vision</li>
-          <li data-field="capability">audio</li>
-        </ul>
-        <p data-field="rate_limit">legacy tier</p>
-        <p data-field="deprecation">Deprecated on 2026-08-31</p>
-        <p data-field="migration">Migrate to gpt-5-mini for lower pricing and longer context</p>
-        <time data-field="effective_date">2026-05-31</time>
-      </section>
+      <h2 id="text-tokens">Flagship models</h2>
+      <small>Prices per 1M tokens.</small>
+      <table>
+        <tr>
+          <td>Short context</td><td></td><td></td><td></td>
+          <td>Long context</td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Model</td><td>Input</td><td>Cached input</td><td>Output</td>
+          <td>Input</td><td>Cached input</td><td>Output</td>
+        </tr>
+        <tr>
+          <td><span>gpt-5-mini</span></td>
+          <td><span>$0.25</span></td>
+          <td><span>$0.025</span></td>
+          <td><span>$2.00</span></td>
+          <td><span>$0.50</span></td>
+          <td><span>$0.05</span></td>
+          <td><span>$3.00</span></td>
+        </tr>
+        <tr>
+          <td><span>gpt-4o</span></td>
+          <td><span>$2.50</span></td>
+          <td><span>$1.25</span></td>
+          <td><span>$10.00</span></td>
+          <td><span>$5.00</span></td>
+          <td><span>$2.50</span></td>
+          <td><span>$15.00</span></td>
+        </tr>
+      </table>
     </main>
     <aside>
       <p>Fresh recommendation widget with unrelated links.</p>

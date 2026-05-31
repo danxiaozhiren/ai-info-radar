@@ -77,7 +77,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
             self.assertEqual(deliveries[0].source, "Claude Code Changelog (Anthropic)")
             self.assertEqual(deliveries[0].authority, "official")
             self.assertIn("breaking change", deliveries[0].why_it_matters)
-            self.assertTrue(deliveries[0].original_link.endswith("#v1-2-0"))
+            self.assertTrue(deliveries[0].original_link.endswith("#1-2-0"))
 
             with sqlite3.connect(db_path) as connection:
                 rows = connection.execute(
@@ -96,7 +96,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
             source="Claude Code Changelog (Anthropic)",
             authority="official",
             why_it_matters="official authority: official; breaking change",
-            original_link="https://docs.anthropic.com/en/release-notes/claude-code#v1-2-0",
+            original_link="https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-0",
             supporting_sources=("Anthropic Engineering",),
             matched_terms=("breaking change", "deprecated"),
         )
@@ -109,7 +109,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
         self.assertIn("Source: Claude Code Changelog (Anthropic)", text)
         self.assertIn("Authority: official", text)
         self.assertIn("Why: official authority: official; breaking change", text)
-        self.assertIn("Link: https://docs.anthropic.com", text)
+        self.assertIn("Link: https://raw.githubusercontent.com", text)
         self.assertIn("Supporting sources: Anthropic Engineering", text)
         self.assertIn("Matched terms: breaking change, deprecated", text)
 
@@ -120,7 +120,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
             source="Claude Code Changelog (Anthropic)",
             authority="official",
             why_it_matters="breaking change",
-            original_link="https://docs.anthropic.com/en/release-notes/claude-code#v1-2-0",
+            original_link="https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-0",
         )
         captured: dict[str, object] = {}
 

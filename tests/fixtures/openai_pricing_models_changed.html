@@ -6,35 +6,36 @@
   </head>
   <body>
     <main>
-      <section
-        data-model-pricing
-        id="gpt-5-mini"
-        data-model="gpt-5-mini"
-        data-input-price="$0.20 / 1M tokens"
-        data-output-price="$1.60 / 1M tokens"
-        data-context-window="1M tokens"
-        data-capabilities="text, vision, tool calling, computer use"
-        data-rate-limit="higher rate limit: 20M tokens per minute"
-        data-effective-date="2026-06-01"
-      >
-        <h2 data-field="model">gpt-5-mini</h2>
-      </section>
-
-      <section
-        data-model-pricing
-        id="gpt-4o-legacy"
-        data-model="gpt-4o"
-        data-input-price="$2.50 / 1M tokens"
-        data-output-price="$10.00 / 1M tokens"
-        data-context-window="128K tokens"
-        data-capabilities="text, vision, audio"
-        data-rate-limit="legacy tier"
-        data-deprecation="Deprecated on 2026-07-31"
-        data-migration="Migrate to gpt-5-mini before 2026-07-31"
-        data-effective-date="2026-06-01"
-      >
-        <h2 data-field="model">gpt-4o</h2>
-      </section>
+      <h2 id="text-tokens">Flagship models</h2>
+      <small>Prices per 1M tokens.</small>
+      <table>
+        <tr>
+          <td>Short context</td><td></td><td></td><td></td>
+          <td>Long context</td><td></td><td></td>
+        </tr>
+        <tr>
+          <td>Model</td><td>Input</td><td>Cached input</td><td>Output</td>
+          <td>Input</td><td>Cached input</td><td>Output</td>
+        </tr>
+        <tr>
+          <td><span>gpt-5-mini</span></td>
+          <td><span>$0.20</span></td>
+          <td><span>$0.02</span></td>
+          <td><span>$1.60</span></td>
+          <td><span>$0.40</span></td>
+          <td><span>$0.04</span></td>
+          <td><span>$2.40</span></td>
+        </tr>
+        <tr>
+          <td><span>gpt-4o</span></td>
+          <td><span>$3.00</span></td>
+          <td><span>$1.50</span></td>
+          <td><span>$12.00</span></td>
+          <td><span>$6.00</span></td>
+          <td><span>$3.00</span></td>
+          <td><span>$18.00</span></td>
+        </tr>
+      </table>
     </main>
   </body>
 </html>

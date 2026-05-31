@@ -78,9 +78,7 @@ def extract_anthropic_engineering(fetched: FetchedSource) -> list[NormalizedItem
 
 
 def extract_claude_code_changelog(fetched: FetchedSource) -> list[NormalizedItem]:
-    parser = _ClaudeCodeChangelogParser(fetched.final_url)
-    parser.feed(fetched.body)
-    entries = parser.entries
+    entries = _parse_markdown_changelog(fetched.body)
     if not entries:
         raise ExtractionError(f"No Claude Code changelog entries found for {fetched.source.id}.")
 
@@ -127,6 +125,37 @@ def extract_claude_code_changelog(fetched: FetchedSource) -> list[NormalizedItem
     if not items:
         raise ExtractionError(f"Claude Code changelog entries were incomplete for {fetched.source.id}.")
     return items
+
+
+def _parse_markdown_changelog(body: str) -> list[_ChangelogEntry]:
+    entries: list[_ChangelogEntry] = []
+    current: _ChangelogEntry | None = None
+
+    for line in body.splitlines():
+        heading_match = re.match(r"^##\s+(.+)$", line)
+        if heading_match:
+            if current is not None:
+                entries.append(current)
+            version = heading_match.group(1).strip()
+            current = _ChangelogEntry(
+                fragment=_slugify(version),
+                title=version,
+            )
+            continue
+
+        if current is None:
+            continue
+
+        bullet_match = re.match(r"^[-*]\s+(.+)$", line)
+        if bullet_match:
+            current.summary_parts.append(bullet_match.group(1).strip())
+        elif line.strip() and current.summary_parts:
+            current.summary_parts[-1] += " " + line.strip()
+
+    if current is not None:
+        entries.append(current)
+
+    return entries
 
 
 def extract_agents_radar_digest(fetched: FetchedSource) -> list[NormalizedItem]:
@@ -418,97 +447,6 @@ class _AnthropicEngineeringParser(HTMLParser):
         self._buffer = []
 
 
-class _ClaudeCodeChangelogParser(HTMLParser):
-    def __init__(self, base_url: str) -> None:
-        super().__init__(convert_charrefs=True)
-        self.base_url = base_url
-        self.entries: list[_ChangelogEntry] = []
-        self._entry: _ChangelogEntry | None = None
-        self._entry_depth = 0
-        self._capture: str | None = None
-        self._capture_end_tag: str | None = None
-        self._buffer: list[str] = []
-        self._ignored_depth = 0
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attr = {key: value or "" for key, value in attrs}
-        if tag in {"script", "style", "footer", "nav", "aside"}:
-            self._ignored_depth += 1
-            return
-        if self._ignored_depth:
-            return
-
-        if self._entry is None and self._is_entry_container(tag, attr):
-            self._entry = _ChangelogEntry(fragment=attr.get("id", "").strip())
-            self._entry_depth = 1
-            return
-
-        if self._entry is None:
-            return
-
-        self._entry_depth += 1
-        if self._capture:
-            return
-
-        if tag in {"h1", "h2", "h3", "h4"} and not self._entry.title:
-            self._begin_capture("title", tag)
-        elif tag == "time" and not self._entry.published_at:
-            datetime_value = attr.get("datetime", "").strip()
-            if datetime_value:
-                self._entry.published_at = datetime_value
-            else:
-                self._begin_capture("published_at", tag)
-        elif tag in {"p", "li"}:
-            self._begin_capture("note", tag)
-
-    def handle_endtag(self, tag: str) -> None:
-        if self._ignored_depth:
-            if tag in {"script", "style", "footer", "nav", "aside"}:
-                self._ignored_depth -= 1
-            return
-
-        if self._entry is None:
-            return
-
-        if self._capture and tag == self._capture_end_tag:
-            captured = _normalize_text("".join(self._buffer))
-            if captured:
-                if self._capture == "title":
-                    self._entry.title = captured
-                elif self._capture == "published_at":
-                    self._entry.published_at = captured
-                elif self._capture == "note":
-                    self._entry.summary_parts.append(captured)
-            self._capture = None
-            self._capture_end_tag = None
-            self._buffer = []
-
-        self._entry_depth -= 1
-        if self._entry_depth == 0:
-            self.entries.append(self._entry)
-            self._entry = None
-
-    def handle_data(self, data: str) -> None:
-        if self._ignored_depth or not self._capture:
-            return
-        self._buffer.append(data)
-
-    def _begin_capture(self, field: str, end_tag: str) -> None:
-        self._capture = field
-        self._capture_end_tag = end_tag
-        self._buffer = []
-
-    def _is_entry_container(self, tag: str, attr: dict[str, str]) -> bool:
-        if tag not in {"article", "section", "div"}:
-            return False
-        classes = set(attr.get("class", "").split())
-        return (
-            "data-changelog-entry" in attr
-            or "changelog-entry" in classes
-            or attr.get("data-testid") == "changelog-entry"
-        )
-
-
 class _AgentsRadarDigestParser(HTMLParser):
     def __init__(self, base_url: str) -> None:
         super().__init__(convert_charrefs=True)
@@ -614,102 +552,71 @@ class _OfficialModelPricingParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.base_url = base_url
         self.records: list[_ModelPricingRecord] = []
-        self._record: _ModelPricingRecord | None = None
-        self._record_depth = 0
-        self._capture: str | None = None
-        self._capture_end_tag: str | None = None
-        self._buffer: list[str] = []
+        self._in_table = 0
+        self._in_row = False
+        self._in_cell = False
+        self._cells: list[str] = []
+        self._cell_buffer: list[str] = []
         self._ignored_depth = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attr = {key: value or "" for key, value in attrs}
-        if tag in {"script", "style", "footer", "nav", "aside"}:
+        if tag in {"script", "style", "nav", "aside"}:
             self._ignored_depth += 1
             return
         if self._ignored_depth:
             return
 
-        if self._record is None and self._is_record_container(tag, attr):
-            self._record = _ModelPricingRecord(
-                fragment=attr.get("id", "").strip(),
-                model=attr.get("data-model", "").strip(),
-                input_price=attr.get("data-input-price", "").strip(),
-                output_price=attr.get("data-output-price", "").strip(),
-                context_window=attr.get("data-context-window", "").strip(),
-                rate_limit=attr.get("data-rate-limit", "").strip(),
-                deprecation=attr.get("data-deprecation", "").strip(),
-                migration=attr.get("data-migration", "").strip(),
-                effective_date=attr.get("data-effective-date", "").strip(),
-            )
-            capabilities = attr.get("data-capabilities", "").strip()
-            if capabilities:
-                self._record.capabilities = _split_capabilities(capabilities)
-            self._record_depth = 1
-            return
-
-        if self._record is None:
-            return
-
-        self._record_depth += 1
-        field = attr.get("data-field", "").strip()
-        if field == "capability":
-            self._begin_capture("capability", tag)
-            return
-        if field in {
-            "model",
-            "input_price",
-            "output_price",
-            "context_window",
-            "rate_limit",
-            "deprecation",
-            "migration",
-            "effective_date",
-        } and not getattr(self._record, field):
-            self._begin_capture(field, tag)
+        if tag == "table":
+            self._in_table += 1
+        elif tag == "tr" and self._in_table > 0:
+            self._in_row = True
+            self._cells = []
+        elif tag in {"td", "th"} and self._in_row:
+            self._in_cell = True
+            self._cell_buffer = []
 
     def handle_endtag(self, tag: str) -> None:
         if self._ignored_depth:
-            if tag in {"script", "style", "footer", "nav", "aside"}:
+            if tag in {"script", "style", "nav", "aside"}:
                 self._ignored_depth -= 1
             return
 
-        if self._record is None:
-            return
-
-        if self._capture and tag == self._capture_end_tag:
-            captured = _normalize_text("".join(self._buffer))
-            if captured:
-                if self._capture == "capability":
-                    self._record.capabilities.append(captured)
-                else:
-                    setattr(self._record, self._capture, captured)
-            self._capture = None
-            self._capture_end_tag = None
-            self._buffer = []
-
-        self._record_depth -= 1
-        if self._record_depth == 0:
-            self.records.append(self._record)
-            self._record = None
+        if tag in {"td", "th"} and self._in_cell:
+            self._in_cell = False
+            self._cells.append(_normalize_text("".join(self._cell_buffer)))
+        elif tag == "tr" and self._in_row:
+            self._in_row = False
+            self._maybe_add_row()
+        elif tag == "table" and self._in_table > 0:
+            self._in_table -= 1
 
     def handle_data(self, data: str) -> None:
-        if self._ignored_depth or not self._capture:
+        if self._ignored_depth or not self._in_cell:
             return
-        self._buffer.append(data)
+        self._cell_buffer.append(data)
 
-    def _begin_capture(self, field: str, end_tag: str) -> None:
-        self._capture = field
-        self._capture_end_tag = end_tag
-        self._buffer = []
+    def _maybe_add_row(self) -> None:
+        if len(self._cells) < 7:
+            return
+        model = self._cells[0].strip()
+        if not model or not re.match(r"^[a-z]", model, re.IGNORECASE):
+            return
+        if model.lower() in {"model", "input", "output", "cached input"}:
+            return
+        if not re.search(r"\d", model) and " " in model:
+            return
 
-    def _is_record_container(self, tag: str, attr: dict[str, str]) -> bool:
-        if tag not in {"article", "section", "div", "tr"}:
-            return False
-        classes = set(attr.get("class", "").split())
-        return (
-            "data-model-pricing" in attr
-            or "model-pricing-row" in classes
-            or attr.get("data-testid") == "model-pricing"
+        input_price = self._cells[1] if len(self._cells) > 1 else ""
+        cached_input = self._cells[2] if len(self._cells) > 2 else ""
+        output_price = self._cells[3] if len(self._cells) > 3 else ""
+
+        self.records.append(
+            _ModelPricingRecord(
+                fragment=_slugify(model),
+                model=model,
+                input_price=input_price,
+                output_price=output_price,
+            )
         )
 
 

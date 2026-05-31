@@ -41,14 +41,14 @@ class ClaudeCodeChangelogIssueTests(unittest.TestCase):
         self.assertEqual(items[0].title, "Claude Code 1.2.3")
         self.assertEqual(
             items[0].url,
-            "https://docs.anthropic.com/en/release-notes/claude-code#v1-2-3",
+            "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md#1-2-3",
         )
-        self.assertEqual(items[0].published_at, "2026-05-28")
+        self.assertIsNone(items[0].published_at)
         self.assertEqual(items[0].vendor, "Anthropic")
         self.assertEqual(items[0].content_type, "developer_changelog")
         self.assertEqual(items[0].authority_level, "official")
         self.assertEqual(items[0].trace["parser"], "claude_code_changelog")
-        self.assertEqual(items[0].trace["entry_id"], "v1-2-3")
+        self.assertEqual(items[0].trace["entry_id"], "1-2-3")
         self.assertIn("MCP server permission controls", items[0].summary)
         self.assertIn("agent workflows", items[0].summary)
 
@@ -69,7 +69,7 @@ class ClaudeCodeChangelogIssueTests(unittest.TestCase):
         churned_source = source.__class__(
             **{
                 **source.__dict__,
-                "fixture_path": "tests/fixtures/claude_code_changelog_churned.html",
+                "fixture_path": "tests/fixtures/claude_code_changelog_churned.md",
             }
         )
         fetched_churned = fetch_source(churned_source, repo_root=ROOT)
@@ -108,10 +108,10 @@ class ClaudeCodeChangelogIssueTests(unittest.TestCase):
             self.assertEqual(items[0]["vendor"], "Anthropic")
             self.assertEqual(items[0]["content_type"], "developer_changelog")
             self.assertEqual(items[0]["state"], "new")
-            self.assertTrue(items[0]["url"].endswith("#v1-2-3"))
+            self.assertTrue(items[0]["url"].endswith("#1-2-3"))
             self.assertIn("MCP", items[0]["summary"])
             self.assertIn("Breaking change", items[1]["summary"])
-            self.assertEqual(json.loads(items[0]["trace_json"])["entry_id"], "v1-2-3")
+            self.assertEqual(json.loads(items[0]["trace_json"])["entry_id"], "1-2-3")
 
     def _run_poll(self, db_path: Path) -> subprocess.CompletedProcess[str]:
         env = {**os.environ, "PYTHONPATH": str(SRC)}
