@@ -1,0 +1,73 @@
+{
+  "page": {
+    "id": "anthropic",
+    "name": "Anthropic Status",
+    "url": "https://status.anthropic.com"
+  },
+  "incidents": [
+    {
+      "id": "inc-api-20260531",
+      "name": "Elevated errors for Claude API requests",
+      "status": "investigating",
+      "impact": "major",
+      "shortlink": "https://status.anthropic.com/incidents/inc-api-20260531",
+      "created_at": "2026-05-31T00:15:00.000Z",
+      "updated_at": "2026-05-31T00:35:00.000Z",
+      "resolved_at": null,
+      "components": [
+        {
+          "name": "Claude API",
+          "status": "partial_outage"
+        },
+        {
+          "name": "Claude Code",
+          "status": "degraded_performance"
+        }
+      ],
+      "incident_updates": [
+        {
+          "id": "upd-api-2",
+          "status": "investigating",
+          "body": "We are investigating elevated errors and degraded performance affecting Claude API and Claude Code requests.",
+          "display_at": "2026-05-31T00:35:00.000Z"
+        },
+        {
+          "id": "upd-api-1",
+          "status": "investigating",
+          "body": "We are investigating reports of increased 5xx responses.",
+          "display_at": "2026-05-31T00:15:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "inc-console-20260530",
+      "name": "Claude Console login failures",
+      "status": "resolved",
+      "impact": "minor",
+      "shortlink": "https://status.anthropic.com/incidents/inc-console-20260530",
+      "created_at": "2026-05-30T20:00:00.000Z",
+      "updated_at": "2026-05-30T20:40:00.000Z",
+      "resolved_at": "2026-05-30T20:40:00.000Z",
+      "components": [
+        {
+          "name": "Claude Console",
+          "status": "operational"
+        }
+      ],
+      "incident_updates": [
+        {
+          "id": "upd-console-2",
+          "status": "resolved",
+          "body": "The incident has been resolved and Claude Console login has recovered.",
+          "display_at": "2026-05-30T20:40:00.000Z"
+        },
+        {
+          "id": "upd-console-1",
+          "status": "identified",
+          "body": "We identified an issue causing login failures.",
+          "display_at": "2026-05-30T20:10:00.000Z"
+        }
+      ]
+    }
+  ]
+}

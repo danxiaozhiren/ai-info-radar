@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "openai-api-pricing",
+      "name": "OpenAI API Pricing",
+      "vendor": "OpenAI",
+      "source_type": "web_page",
+      "authority_level": "official",
+      "url": "https://platform.openai.com/docs/pricing/",
+      "priority": 105,
+      "parsing_strategy": "official_model_pricing",
+      "content_type": "pricing",
+      "fixture_path": "tests/fixtures/openai_pricing_models.html",
+      "enabled": true
+    }
+  ]
+}

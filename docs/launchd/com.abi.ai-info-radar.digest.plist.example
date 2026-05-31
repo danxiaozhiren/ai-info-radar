@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.abi.ai-info-radar.digest</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>set -a; [ -f "$AI_INFO_RADAR_ENV" ] &amp;&amp; source "$AI_INFO_RADAR_ENV"; set +a; mkdir -p "$AI_INFO_RADAR_LOG_DIR" "$AI_INFO_RADAR_REPORT_DIR" "$(dirname "$AI_INFO_RADAR_DB")" &amp;&amp; cd "$AI_INFO_RADAR_ROOT" &amp;&amp; PYTHONPATH="$AI_INFO_RADAR_ROOT/src" "$AI_INFO_RADAR_PYTHON" -m ai_info_radar daily --db "$AI_INFO_RADAR_DB" --reports-dir "$AI_INFO_RADAR_REPORT_DIR" --timeout "${AI_INFO_RADAR_TIMEOUT:-20}"</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>AI_INFO_RADAR_ENV</key>
+    <string>/Users/abi/.config/ai-info-radar/ai-info-radar.env</string>
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/abi/Library/Logs/ai-info-radar/digest.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/abi/Library/Logs/ai-info-radar/digest.err.log</string>
+</dict>
+</plist>

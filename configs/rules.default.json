@@ -1,0 +1,91 @@
+{
+  "official_authority_levels": ["official", "official_github", "status"],
+  "candidate_authority_levels": ["aggregator", "media", "social"],
+  "high_signal_content_types": [
+    "api_changelog",
+    "aggregator_candidate",
+    "developer_changelog",
+    "engineering",
+    "model_list",
+    "pricing",
+    "status_incident"
+  ],
+  "keyword_rules": [
+    {
+      "name": "breaking_change",
+      "terms": ["breaking change", "breaking changes"],
+      "score": 40,
+      "reason": "breaking change"
+    },
+    {
+      "name": "migration",
+      "terms": ["migration", "migrated", "migrate"],
+      "score": 28,
+      "reason": "migration impact"
+    },
+    {
+      "name": "deprecation",
+      "terms": ["deprecated", "deprecation", "removed"],
+      "score": 32,
+      "reason": "deprecation or removal"
+    },
+    {
+      "name": "pricing_or_limits",
+      "terms": [
+        "pricing",
+        "price",
+        "input price",
+        "output price",
+        "rate limit",
+        "rate-limit",
+        "quota",
+        "tokens per minute"
+      ],
+      "score": 30,
+      "reason": "pricing or limit change"
+    },
+    {
+      "name": "model_release",
+      "terms": [
+        "model release",
+        "launch",
+        "new model",
+        "model:",
+        "capabilities:",
+        "context:",
+        "sonnet",
+        "opus",
+        "haiku"
+      ],
+      "score": 24,
+      "reason": "model or product release"
+    },
+    {
+      "name": "security_or_outage",
+      "terms": [
+        "security",
+        "vulnerability",
+        "incident",
+        "outage",
+        "partial outage",
+        "major outage",
+        "degraded",
+        "degradation",
+        "elevated errors",
+        "investigating",
+        "monitoring",
+        "resolved",
+        "recovered",
+        "recovery"
+      ],
+      "score": 36,
+      "reason": "security or availability event"
+    },
+    {
+      "name": "developer_tooling",
+      "terms": ["mcp", "agent workflow", "permission", "sandbox", "hooks schema"],
+      "score": 20,
+      "reason": "developer-tool workflow impact"
+    }
+  ]
+}
