@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "anthropic-status-incidents",
+      "name": "Anthropic Status Incidents",
+      "vendor": "Anthropic",
+      "source_type": "status_api",
+      "authority_level": "status",
+      "url": "https://status.anthropic.com/api/v2/incidents.json",
+      "priority": 110,
+      "parsing_strategy": "statuspage_incidents",
+      "content_type": "status_incident",
+      "fixture_path": "tests/fixtures/anthropic_status_incidents.json",
+      "enabled": true
+    }
+  ]
+}

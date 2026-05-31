@@ -16,14 +16,18 @@ Structured status feeds or APIs should be preferred where available.
 
 ## Acceptance criteria
 
-- [ ] The curated manifest includes at least one official status source.
-- [ ] The status extractor normalizes incident, degradation, outage, and recovery records into items or events.
-- [ ] Status incidents and recoveries can trigger direct strong alerts from official sources.
-- [ ] Source failures and stale status retrievals are recorded for daily digest visibility.
-- [ ] Repeated polling of the same incident is idempotent and does not repeatedly alert.
-- [ ] Tests cover status fixtures, incident classification, recovery classification, and failure reporting.
+- [x] The curated manifest includes at least one official status source.
+- [x] The status extractor normalizes incident, degradation, outage, and recovery records into items or events.
+- [x] Status incidents and recoveries can trigger direct strong alerts from official sources.
+- [x] Source failures and stale status retrievals are recorded for daily digest visibility.
+- [x] Repeated polling of the same incident is idempotent and does not repeatedly alert.
+- [x] Tests cover status fixtures, incident classification, recovery classification, and failure reporting.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
 - .scratch/ai-alert-system/issues/03-send-official-critical-feishu-alert.md
+
+## Comments
+
+- 2026-05-31: Implemented on branch `codex/issue-07-status-incidents`; verified with unit tests, CLI idempotency and missing-webhook smoke tests, and compile check.

@@ -25,6 +25,7 @@ SUPPORTED_PARSING_STRATEGIES = {
     "agents_radar_digest",
     "anthropic_engineering_index",
     "claude_code_changelog",
+    "statuspage_incidents",
 }
 
 
