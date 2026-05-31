@@ -1,6 +1,6 @@
 # Manage item state from CLI
 
-Status: ready-for-agent
+Status: done
 Type: AFK
 User stories covered: 23, 24, 25
 
@@ -16,14 +16,18 @@ This slice keeps the first version operational without adding a web UI.
 
 ## Acceptance criteria
 
-- [ ] Stored items support at least new, alerted, in daily, read, saved, and ignored states.
-- [ ] CLI commands can mark one or more items read, saved, or ignored by stable identifiers.
-- [ ] Saved items appear in a distinct daily digest section.
-- [ ] Ignored items are excluded from normal alert or digest surfaces unless explicitly requested.
-- [ ] State changes are persisted and survive repeated CLI runs.
-- [ ] Tests cover state transitions, digest inclusion or exclusion, and user-facing CLI behavior with a temporary database.
+- [x] Stored items support at least new, alerted, in daily, read, saved, and ignored states.
+- [x] CLI commands can mark one or more items read, saved, or ignored by stable identifiers.
+- [x] Saved items appear in a distinct daily digest section.
+- [x] Ignored items are excluded from normal alert or digest surfaces unless explicitly requested.
+- [x] State changes are persisted and survive repeated CLI runs.
+- [x] Tests cover state transitions, digest inclusion or exclusion, and user-facing CLI behavior with a temporary database.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
 - .scratch/ai-alert-system/issues/04-generate-morning-digest.md
+
+## Agent notes
+
+- 2026-05-31: Implemented on branch `codex/issue-10-manage-item-state-cli`. Added `items list/read/save/ignore` CLI commands, fingerprint-prefix item resolution, `alerted` and `daily` state transitions, ignored/read filtering for alerts and digests, and coverage for persisted state changes. Verified with 56 unit tests, CLI smoke checks, and a `compileall` check.

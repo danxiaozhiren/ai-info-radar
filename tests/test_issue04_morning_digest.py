@@ -55,13 +55,15 @@ class MorningDigestIssueTests(unittest.TestCase):
             self.assertIn("- Worth reading: 1", report)
             self.assertIn("- Saved: 1", report)
             self.assertIn("- Source failures: 1", report)
-            self.assertIn("- Marked digested: 2", report)
+            self.assertIn("- Marked in daily: 1", report)
+            self.assertIn("alerted=1", report)
+            self.assertIn("daily=1", report)
             self.assertIn("ignored=1", report)
             self.assertIn("saved=1", report)
             self.assertNotIn("<html", report)
             self.assertNotIn("window.__docs_shell", report)
 
-    def test_daily_digest_marks_only_new_included_items_digested(self) -> None:
+    def test_daily_digest_marks_only_new_included_items_daily(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             db_path = Path(temp_dir) / "radar.sqlite"
             self._seed_digest_db(db_path)
@@ -72,10 +74,10 @@ class MorningDigestIssueTests(unittest.TestCase):
                 report_date=date(2026, 5, 30),
             )
 
-            self.assertEqual(result.marked_digested, 2)
+            self.assertEqual(result.marked_digested, 1)
             states = self._states_by_title(db_path)
-            self.assertEqual(states["Claude Code 1.2.0"], "digested")
-            self.assertEqual(states["Claude Code 1.2.3"], "digested")
+            self.assertEqual(states["Claude Code 1.2.0"], "alerted")
+            self.assertEqual(states["Claude Code 1.2.3"], "daily")
             self.assertEqual(states["Context editing for long-running coding agents"], "saved")
             self.assertEqual(
                 states["Scaling Managed Agents: Decoupling the brain from the hands"],

@@ -16,6 +16,9 @@ from .models import (
 )
 
 
+ITEM_STATES = {"new", "alerted", "daily", "read", "saved", "ignored", "digested"}
+USER_SETTABLE_ITEM_STATES = {"read", "saved", "ignored"}
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sources (
   id TEXT PRIMARY KEY,
@@ -99,6 +102,17 @@ CREATE TABLE IF NOT EXISTS event_match_keys (
 class InsertSummary:
     inserted: int
     existing: int
+
+
+@dataclass(frozen=True)
+class ItemStateUpdate:
+    item: StoredItem
+    previous_state: str
+    new_state: str
+
+
+class ItemStateError(ValueError):
+    pass
 
 
 class RadarStore:
@@ -199,14 +213,20 @@ class RadarStore:
         )
         self.connection.commit()
 
-    def list_items(self) -> list[StoredItem]:
+    def list_items(self, *, state: str | None = None) -> list[StoredItem]:
+        if state is not None and state not in ITEM_STATES:
+            raise ItemStateError(f"Unsupported item state: {state}")
+        where = "WHERE state = ?" if state is not None else ""
+        parameters = (state,) if state is not None else ()
         rows = self.connection.execute(
-            """
+            f"""
             SELECT id, source_id, source_name, vendor, authority_level, content_type,
                    title, url, detected_at, published_at, summary, fingerprint, state, trace_json
             FROM items
+            {where}
             ORDER BY id
-            """
+            """,
+            parameters,
         ).fetchall()
         return [_stored_item_from_row(row) for row in rows]
 
@@ -246,6 +266,14 @@ class RadarStore:
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (alert_key, item_id, fingerprint, notifier, status, message, utc_now_iso()),
+        )
+        self.connection.execute(
+            """
+            UPDATE items
+            SET state = 'alerted'
+            WHERE id = ? AND state NOT IN ('read', 'saved', 'ignored')
+            """,
+            (item_id,),
         )
         self.connection.commit()
 
@@ -402,15 +430,27 @@ class RadarStore:
         ).fetchall()
         return tuple(row["source_name"] for row in rows)
 
-    def list_alert_history(self) -> list[AlertHistoryEntry]:
+    def list_alert_history(self, *, exclude_item_states: set[str] | None = None) -> list[AlertHistoryEntry]:
+        excluded = tuple(sorted(exclude_item_states or ()))
+        where = ""
+        parameters: tuple[str, ...] = ()
+        if excluded:
+            unsupported = sorted(set(excluded) - ITEM_STATES)
+            if unsupported:
+                raise ItemStateError(f"Unsupported item state: {', '.join(unsupported)}")
+            placeholders = ", ".join("?" for _ in excluded)
+            where = f"WHERE i.state NOT IN ({placeholders})"
+            parameters = excluded
         rows = self.connection.execute(
-            """
+            f"""
             SELECT a.alert_key, a.item_id, a.fingerprint, a.notifier, a.status,
                    a.message, a.alerted_at, i.title, i.url, i.source_name
             FROM alert_history a
             JOIN items i ON i.id = a.item_id
+            {where}
             ORDER BY a.alerted_at DESC, a.item_id DESC
-            """
+            """,
+            parameters,
         ).fetchall()
         return [
             AlertHistoryEntry(
@@ -461,19 +501,95 @@ class RadarStore:
         ]
 
     def mark_new_items_digested(self, item_ids: list[int]) -> int:
+        return self.mark_new_items_daily(item_ids)
+
+    def mark_new_items_daily(self, item_ids: list[int]) -> int:
         if not item_ids:
             return 0
         placeholders = ", ".join("?" for _ in item_ids)
         cursor = self.connection.execute(
             f"""
             UPDATE items
-            SET state = 'digested'
+            SET state = 'daily'
             WHERE state = 'new' AND id IN ({placeholders})
             """,
             tuple(item_ids),
         )
         self.connection.commit()
         return int(cursor.rowcount)
+
+    def resolve_item_identifier(self, identifier: str) -> StoredItem:
+        cleaned = identifier.strip()
+        if not cleaned:
+            raise ItemStateError("Empty item identifier.")
+
+        if cleaned.isdecimal():
+            item = self._item_by_id(int(cleaned))
+            if item is not None:
+                return item
+
+        if len(cleaned) < 6:
+            raise ItemStateError(f"Item fingerprint prefix is too short: {cleaned}")
+
+        matches = self._items_by_fingerprint_prefix(cleaned)
+        if not matches:
+            raise ItemStateError(f"Unknown item identifier: {cleaned}")
+        if len(matches) > 1:
+            matching_ids = ", ".join(str(item.id) for item in matches)
+            raise ItemStateError(f"Ambiguous item identifier {cleaned}; matches item ids: {matching_ids}")
+        return matches[0]
+
+    def set_item_state_by_identifiers(
+        self,
+        identifiers: list[str],
+        state: str,
+    ) -> list[ItemStateUpdate]:
+        if state not in USER_SETTABLE_ITEM_STATES:
+            raise ItemStateError(f"State is not user-settable: {state}")
+        if not identifiers:
+            raise ItemStateError("At least one item identifier is required.")
+
+        resolved: dict[int, StoredItem] = {}
+        for identifier in identifiers:
+            item = self.resolve_item_identifier(identifier)
+            resolved.setdefault(item.id, item)
+
+        updates = [
+            ItemStateUpdate(item=item, previous_state=item.state, new_state=state)
+            for item in resolved.values()
+        ]
+        for update in updates:
+            self.connection.execute(
+                "UPDATE items SET state = ? WHERE id = ?",
+                (state, update.item.id),
+            )
+        self.connection.commit()
+        return updates
+
+    def _item_by_id(self, item_id: int) -> StoredItem | None:
+        row = self.connection.execute(
+            """
+            SELECT id, source_id, source_name, vendor, authority_level, content_type,
+                   title, url, detected_at, published_at, summary, fingerprint, state, trace_json
+            FROM items
+            WHERE id = ?
+            """,
+            (item_id,),
+        ).fetchone()
+        return _stored_item_from_row(row) if row is not None else None
+
+    def _items_by_fingerprint_prefix(self, prefix: str) -> list[StoredItem]:
+        rows = self.connection.execute(
+            """
+            SELECT id, source_id, source_name, vendor, authority_level, content_type,
+                   title, url, detected_at, published_at, summary, fingerprint, state, trace_json
+            FROM items
+            WHERE fingerprint LIKE ?
+            ORDER BY id
+            """,
+            (f"{prefix}%",),
+        ).fetchall()
+        return [_stored_item_from_row(row) for row in rows]
 
 
 def _stored_item_from_row(row: sqlite3.Row) -> StoredItem:

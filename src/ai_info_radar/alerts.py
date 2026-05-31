@@ -120,6 +120,8 @@ def _select_candidate(store: RadarStore) -> tuple[str, StoredItem, AlertDecision
             continue
         event_candidates: list[tuple[StoredItem, AlertDecision]] = []
         for item in store.event_items(event.event_key):
+            if item.state != "new":
+                continue
             decision = classify_item(item)
             if decision.should_alert:
                 event_candidates.append((item, decision))

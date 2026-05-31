@@ -52,14 +52,14 @@ def generate_daily_digest(
 
     with RadarStore(db_path) as store:
         content = build_digest_content(store, current_date)
-        marked = store.mark_new_items_digested(_included_item_ids(content))
+        marked = store.mark_new_items_daily(_included_item_ids(content))
         content = DigestContent(
             report_date=content.report_date,
             alerted_items=content.alerted_items,
             worth_reading_items=content.worth_reading_items,
             saved_items=content.saved_items,
             source_failures=content.source_failures,
-            state_counts=content.state_counts,
+            state_counts=store.item_state_counts(),
             total_items=content.total_items,
             marked_digested=marked,
         )
@@ -110,7 +110,11 @@ def generate_daily_digest(
 def build_digest_content(store: RadarStore, report_date: date) -> DigestContent:
     merge_events(store)
     items = store.list_items()
-    alerts = tuple(store.list_alert_history())
+    alerts = tuple(
+        store.list_alert_history(
+            exclude_item_states={"daily", "digested", "ignored", "read", "saved"}
+        )
+    )
     alerted_item_ids = {alert.item_id for alert in alerts}
     saved_items = tuple(item for item in items if item.state == "saved")
     worth_reading_items = tuple(
@@ -153,7 +157,7 @@ def render_digest_markdown(content: DigestContent) -> str:
         f"- Worth reading: {len(content.worth_reading_items)}",
         f"- Saved: {len(content.saved_items)}",
         f"- Source failures: {len(content.source_failures)}",
-        f"- Marked digested: {content.marked_digested}",
+        f"- Marked in daily: {content.marked_digested}",
         f"- State counts: {_format_state_counts(content.state_counts)}",
         "",
     ]
@@ -182,7 +186,7 @@ def render_digest_text(content: DigestContent) -> str:
     if content.source_failures:
         lines.append("Source failures:")
         lines.extend(f"- {failure.source_id}: {failure.message}" for failure in content.source_failures[:5])
-    lines.append(f"Marked digested: {content.marked_digested}")
+    lines.append(f"Marked in daily: {content.marked_digested}")
     return "\n".join(lines)
 
 
