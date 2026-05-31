@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable
 
 from .classifier import classify_item
+from .events import merge_events
 from .models import AlertDecision, AlertDeliveryResult, AlertMessage, StoredItem
 from .notifiers import send_feishu_webhook
 from .store import RadarStore
@@ -32,16 +33,13 @@ def send_next_critical_alert(
     timeout_seconds: float = 10.0,
 ) -> AlertRunResult:
     with RadarStore(db_path) as store:
+        merge_events(store)
         candidate = _select_candidate(store)
         if candidate is None:
             return AlertRunResult(status="skipped", message="no unalerted critical item")
 
-        item, decision = candidate
-        supporting_sources = store.supporting_sources_for(
-            title=item.title,
-            target_url=item.url,
-            exclude_item_id=item.id,
-        )
+        event_key, item, decision = candidate
+        supporting_sources = store.event_supporting_sources(event_key, exclude_item_id=item.id)
         alert_message = build_alert_message(
             item,
             decision,
@@ -52,7 +50,7 @@ def send_next_critical_alert(
             return AlertRunResult(
                 status="blocked",
                 message="missing FEISHU_WEBHOOK_URL",
-                alert_key=decision.alert_key,
+                alert_key=f"event:{event_key}",
                 short_id=alert_message.short_id,
                 title=alert_message.title,
                 payload=None,
@@ -70,14 +68,14 @@ def send_next_critical_alert(
             return AlertRunResult(
                 status="failed",
                 message=delivery.message or "Feishu webhook delivery failed",
-                alert_key=decision.alert_key,
+                alert_key=f"event:{event_key}",
                 short_id=alert_message.short_id,
                 title=alert_message.title,
                 payload=delivery.payload,
             )
 
         store.record_alert(
-            alert_key=decision.alert_key,
+            alert_key=f"event:{event_key}",
             item_id=item.id,
             fingerprint=item.fingerprint,
             notifier="feishu",
@@ -88,7 +86,7 @@ def send_next_critical_alert(
             status="sent",
             message="Feishu alert sent",
             sent=True,
-            alert_key=decision.alert_key,
+            alert_key=f"event:{event_key}",
             short_id=alert_message.short_id,
             title=alert_message.title,
             payload=delivery.payload,
@@ -114,13 +112,28 @@ def build_alert_message(
     )
 
 
-def _select_candidate(store: RadarStore) -> tuple[StoredItem, AlertDecision] | None:
-    candidates: list[tuple[StoredItem, AlertDecision]] = []
-    for item in store.list_items():
-        decision = classify_item(item)
-        if not decision.should_alert or store.alert_exists(decision.alert_key):
+def _select_candidate(store: RadarStore) -> tuple[str, StoredItem, AlertDecision] | None:
+    candidates: list[tuple[str, StoredItem, AlertDecision]] = []
+    for event in store.list_events():
+        alert_key = f"event:{event.event_key}"
+        if store.alert_exists(alert_key):
             continue
-        candidates.append((item, decision))
+        event_candidates: list[tuple[StoredItem, AlertDecision]] = []
+        for item in store.event_items(event.event_key):
+            decision = classify_item(item)
+            if decision.should_alert:
+                event_candidates.append((item, decision))
+        if not event_candidates:
+            continue
+        item, decision = max(
+            event_candidates,
+            key=lambda pair: (
+                pair[1].score,
+                pair[0].published_at or "",
+                pair[0].id,
+            ),
+        )
+        candidates.append((event.event_key, item, decision))
 
     if not candidates:
         return None
@@ -128,8 +141,8 @@ def _select_candidate(store: RadarStore) -> tuple[StoredItem, AlertDecision] | N
     return max(
         candidates,
         key=lambda pair: (
-            pair[1].score,
-            pair[0].published_at or "",
-            pair[0].id,
+            pair[2].score,
+            pair[1].published_at or "",
+            pair[1].id,
         ),
     )

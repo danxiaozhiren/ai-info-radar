@@ -16,14 +16,18 @@ The event grouping interface should hide hard and approximate matching details f
 
 ## Acceptance criteria
 
-- [ ] Hard deduplication covers identical URL, canonical URL, feed ID, GitHub release tag, and source item ID.
-- [ ] Approximate deduplication covers normalized title similarity, same vendor plus strong keyword within a cooldown window, and aggregator links pointing to the same official source.
-- [ ] Later supporting sources update the existing event rather than creating a new event.
-- [ ] Alerts are sent once per event during the cooldown window.
-- [ ] The digest can show grouped supporting sources for an event.
-- [ ] Tests cover hard matching, approximate matching, aggregator-to-official merging, cooldown suppression, and later-source updates.
+- [x] Hard deduplication covers identical URL, canonical URL, feed ID, GitHub release tag, and source item ID.
+- [x] Approximate deduplication covers normalized title similarity, same vendor plus strong keyword within a cooldown window, and aggregator links pointing to the same official source.
+- [x] Later supporting sources update the existing event rather than creating a new event.
+- [x] Alerts are sent once per event during the cooldown window.
+- [x] The digest can show grouped supporting sources for an event.
+- [x] Tests cover hard matching, approximate matching, aggregator-to-official merging, cooldown suppression, and later-source updates.
 
 ## Blocked by
 
 - .scratch/ai-alert-system/issues/01-persist-anthropic-engineering-poll.md
 - .scratch/ai-alert-system/issues/05-ingest-aggregator-candidate-source.md
+
+## Comments
+
+- 2026-05-31: Implemented on branch `codex/issue-06-event-merge-cooldown`; verified with unit tests, CLI missing-webhook smoke test, and compile check.

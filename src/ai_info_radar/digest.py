@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 from typing import Callable
 
+from .events import merge_events
 from .models import AlertDeliveryResult, AlertHistoryEntry, SourceHealthEntry, StoredItem
 from .notifiers import build_feishu_text_payload, send_feishu_text_webhook
 from .store import RadarStore
@@ -107,6 +108,7 @@ def generate_daily_digest(
 
 
 def build_digest_content(store: RadarStore, report_date: date) -> DigestContent:
+    merge_events(store)
     items = store.list_items()
     alerts = tuple(store.list_alert_history())
     alerted_item_ids = {alert.item_id for alert in alerts}
@@ -194,10 +196,13 @@ def _included_item_ids(content: DigestContent) -> list[int]:
 def _render_alerts(alerts: tuple[AlertHistoryEntry, ...]) -> list[str]:
     if not alerts:
         return ["- None."]
-    return [
-        f"- [{alert.title}]({alert.url}) - {alert.source_name}; alerted at {alert.alerted_at}"
-        for alert in alerts
-    ]
+    rendered = []
+    for alert in alerts:
+        line = f"- [{alert.title}]({alert.url}) - {alert.source_name}; alerted at {alert.alerted_at}"
+        if alert.supporting_sources:
+            line += f"; supporting: {', '.join(alert.supporting_sources)}"
+        rendered.append(line)
+    return rendered
 
 
 def _render_items(items: tuple[StoredItem, ...]) -> list[str]:

@@ -5,7 +5,15 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import AlertHistoryEntry, NormalizedItem, Source, SourceHealthEntry, StoredItem, utc_now_iso
+from .models import (
+    AlertHistoryEntry,
+    EventRecord,
+    NormalizedItem,
+    Source,
+    SourceHealthEntry,
+    StoredItem,
+    utc_now_iso,
+)
 
 
 SCHEMA = """
@@ -57,6 +65,32 @@ CREATE TABLE IF NOT EXISTS alert_history (
   status TEXT NOT NULL,
   message TEXT NOT NULL,
   alerted_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  event_key TEXT PRIMARY KEY,
+  canonical_item_id INTEGER NOT NULL,
+  canonical_title TEXT NOT NULL,
+  canonical_url TEXT NOT NULL,
+  vendor TEXT NOT NULL,
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL,
+  item_count INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS event_items (
+  event_key TEXT NOT NULL,
+  item_id INTEGER NOT NULL UNIQUE,
+  relation TEXT NOT NULL,
+  matched_by TEXT NOT NULL,
+  linked_at TEXT NOT NULL,
+  PRIMARY KEY (event_key, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS event_match_keys (
+  match_key TEXT PRIMARY KEY,
+  event_key TEXT NOT NULL,
+  match_type TEXT NOT NULL
 );
 """
 
@@ -233,6 +267,141 @@ class RadarStore:
                 supporting_sources.add(item.source_name)
         return tuple(sorted(supporting_sources))
 
+    def find_event_by_match_keys(self, match_keys: list[tuple[str, str]]) -> str | None:
+        for match_key, _match_type in match_keys:
+            row = self.connection.execute(
+                "SELECT event_key FROM event_match_keys WHERE match_key = ?",
+                (match_key,),
+            ).fetchone()
+            if row is not None:
+                return row["event_key"]
+        return None
+
+    def upsert_event_item(
+        self,
+        *,
+        event_key: str,
+        item: StoredItem,
+        relation: str,
+        matched_by: str,
+    ) -> None:
+        seen_at = item.published_at or item.detected_at
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO events (
+              event_key, canonical_item_id, canonical_title, canonical_url, vendor,
+              first_seen_at, last_seen_at, item_count
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            """,
+            (
+                event_key,
+                item.id,
+                item.title,
+                item.url,
+                item.vendor,
+                seen_at,
+                seen_at,
+            ),
+        )
+        self.connection.execute(
+            """
+            INSERT OR IGNORE INTO event_items (event_key, item_id, relation, matched_by, linked_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (event_key, item.id, relation, matched_by, utc_now_iso()),
+        )
+        self.connection.execute(
+            """
+            UPDATE events
+            SET last_seen_at = CASE WHEN last_seen_at > ? THEN last_seen_at ELSE ? END,
+                item_count = (
+                  SELECT COUNT(*) FROM event_items WHERE event_items.event_key = events.event_key
+                )
+            WHERE event_key = ?
+            """,
+            (seen_at, seen_at, event_key),
+        )
+        self.connection.commit()
+
+    def register_event_match_keys(
+        self,
+        *,
+        event_key: str,
+        match_keys: list[tuple[str, str]],
+    ) -> None:
+        for match_key, match_type in match_keys:
+            self.connection.execute(
+                """
+                INSERT OR IGNORE INTO event_match_keys (match_key, event_key, match_type)
+                VALUES (?, ?, ?)
+                """,
+                (match_key, event_key, match_type),
+            )
+        self.connection.commit()
+
+    def event_key_for_item(self, item_id: int) -> str | None:
+        row = self.connection.execute(
+            "SELECT event_key FROM event_items WHERE item_id = ?",
+            (item_id,),
+        ).fetchone()
+        return row["event_key"] if row is not None else None
+
+    def event_items(self, event_key: str) -> list[StoredItem]:
+        rows = self.connection.execute(
+            """
+            SELECT i.id, i.source_id, i.source_name, i.vendor, i.authority_level,
+                   i.content_type, i.title, i.url, i.detected_at, i.published_at,
+                   i.summary, i.fingerprint, i.state, i.trace_json
+            FROM event_items ei
+            JOIN items i ON i.id = ei.item_id
+            WHERE ei.event_key = ?
+            ORDER BY i.id
+            """,
+            (event_key,),
+        ).fetchall()
+        return [_stored_item_from_row(row) for row in rows]
+
+    def list_events(self) -> list[EventRecord]:
+        rows = self.connection.execute(
+            """
+            SELECT event_key, canonical_item_id, canonical_title, canonical_url, vendor,
+                   first_seen_at, last_seen_at, item_count
+            FROM events
+            ORDER BY first_seen_at, event_key
+            """
+        ).fetchall()
+        return [
+            EventRecord(
+                event_key=row["event_key"],
+                canonical_item_id=int(row["canonical_item_id"]),
+                canonical_title=row["canonical_title"],
+                canonical_url=row["canonical_url"],
+                vendor=row["vendor"],
+                first_seen_at=row["first_seen_at"],
+                last_seen_at=row["last_seen_at"],
+                item_count=int(row["item_count"]),
+                supporting_sources=self.event_supporting_sources(
+                    row["event_key"],
+                    exclude_item_id=int(row["canonical_item_id"]),
+                ),
+            )
+            for row in rows
+        ]
+
+    def event_supporting_sources(self, event_key: str, *, exclude_item_id: int) -> tuple[str, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT DISTINCT i.source_name
+            FROM event_items ei
+            JOIN items i ON i.id = ei.item_id
+            WHERE ei.event_key = ? AND i.id != ?
+            ORDER BY i.source_name
+            """,
+            (event_key, exclude_item_id),
+        ).fetchall()
+        return tuple(row["source_name"] for row in rows)
+
     def list_alert_history(self) -> list[AlertHistoryEntry]:
         rows = self.connection.execute(
             """
@@ -255,9 +424,21 @@ class RadarStore:
                 title=row["title"],
                 url=row["url"],
                 source_name=row["source_name"],
+                supporting_sources=self._supporting_sources_for_alert(
+                    row["alert_key"],
+                    int(row["item_id"]),
+                ),
             )
             for row in rows
         ]
+
+    def _supporting_sources_for_alert(self, alert_key: str, item_id: int) -> tuple[str, ...]:
+        event_key = alert_key.removeprefix("event:") if alert_key.startswith("event:") else None
+        if event_key is None:
+            event_key = self.event_key_for_item(item_id)
+        if event_key is None:
+            return ()
+        return self.event_supporting_sources(event_key, exclude_item_id=item_id)
 
     def list_source_failures(self) -> list[SourceHealthEntry]:
         rows = self.connection.execute(

@@ -85,7 +85,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
                 ).fetchall()
 
             self.assertEqual(len(rows), 1)
-            self.assertTrue(rows[0][0].startswith("item:"))
+            self.assertTrue(rows[0][0].startswith("event:"))
             self.assertEqual(rows[0][1], "feishu")
             self.assertEqual(rows[0][2], "sent")
 

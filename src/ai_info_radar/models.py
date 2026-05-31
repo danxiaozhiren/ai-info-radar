@@ -78,6 +78,20 @@ class AlertHistoryEntry:
     title: str
     url: str
     source_name: str
+    supporting_sources: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class EventRecord:
+    event_key: str
+    canonical_item_id: int
+    canonical_title: str
+    canonical_url: str
+    vendor: str
+    first_seen_at: str
+    last_seen_at: str
+    item_count: int
+    supporting_sources: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
