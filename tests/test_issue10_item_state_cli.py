@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -101,6 +102,11 @@ class ItemStateCliIssueTests(unittest.TestCase):
                     [str(items["Claude Code 1.2.3"].id)],
                     "read",
                 )
+            with sqlite3.connect(db_path) as connection:
+                connection.execute(
+                    "UPDATE items SET detected_at = '2026-05-31T08:00:00+00:00'"
+                )
+                connection.commit()
 
             result = generate_daily_digest(
                 db_path=db_path,
@@ -110,14 +116,14 @@ class ItemStateCliIssueTests(unittest.TestCase):
 
             report = result.report_path.read_text(encoding="utf-8")
             self.assertEqual(result.marked_digested, 1)
-            self.assertIn("## Saved", report)
+            self.assertIn("## 已保存", report)
             self.assertIn("Context editing for long-running coding agents", report)
             self.assertNotIn("Scaling Managed Agents: Decoupling the brain from the hands", report)
             self.assertNotIn("Claude Code 1.2.3", report)
-            self.assertIn("daily=1", report)
-            self.assertIn("ignored=1", report)
-            self.assertIn("read=1", report)
-            self.assertIn("saved=1", report)
+            self.assertIn("已入日报=1", report)
+            self.assertIn("已忽略=1", report)
+            self.assertIn("已读=1", report)
+            self.assertIn("已保存=1", report)
 
     def test_ignored_critical_items_are_not_alerted_but_can_be_listed(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -160,7 +166,7 @@ class ItemStateCliIssueTests(unittest.TestCase):
             result = self._run_cli(["items", "ignore", "--db", str(db_path), "does-not-exist"])
 
             self.assertEqual(result.returncode, 2)
-            self.assertIn("item state error: Unknown item identifier: does-not-exist", result.stdout)
+            self.assertIn("条目状态错误：未知条目标识：does-not-exist", result.stdout)
 
     def _seed_items(self, db_path: Path) -> None:
         self._run_poll(db_path, ROOT / "configs" / "sources.claude-code.fixture.json")

@@ -131,10 +131,10 @@ class AggregatorCandidateIssueTests(unittest.TestCase):
             first = self._run_poll(db_path, ROOT / "configs" / "sources.agents-radar.fixture.json")
             second = self._run_poll(db_path, ROOT / "configs" / "sources.agents-radar.fixture.json")
 
-            self.assertIn("inserted=2", first.stdout)
-            self.assertIn("existing=0", first.stdout)
-            self.assertIn("inserted=0", second.stdout)
-            self.assertIn("existing=2", second.stdout)
+            self.assertIn("新增=2", first.stdout)
+            self.assertIn("已存在=0", first.stdout)
+            self.assertIn("新增=0", second.stdout)
+            self.assertIn("已存在=2", second.stdout)
 
             with RadarStore(db_path) as store:
                 items = store.list_items()

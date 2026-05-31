@@ -5,8 +5,11 @@ from pathlib import Path
 from .extractors import ExtractionError, extract_items
 from .fetchers import FetchError, fetch_source
 from .manifest import load_sources
-from .models import PollResult, SourcePollResult
+from .models import NormalizedItem, PollResult, SourcePollResult
 from .store import RadarStore
+
+
+UNDATED_INITIAL_BACKFILL_THRESHOLD = 10
 
 
 def poll_sources(
@@ -22,6 +25,7 @@ def poll_sources(
         for source in sources:
             store.upsert_source(source)
             try:
+                source_had_items = store.source_item_count(source.id) > 0
                 fetched = fetch_source(source, repo_root=repo_root, timeout_seconds=timeout_seconds)
                 items = extract_items(fetched)
                 summary = store.insert_items(items)
@@ -31,7 +35,15 @@ def poll_sources(
                 results.append(SourcePollResult(source_id=source.id, ok=False, message=message))
                 continue
 
-            message = f"{len(items)} item(s) extracted"
+            message = f"提取到 {len(items)} 条"
+            baselined = _baseline_initial_undated_backfill(
+                store=store,
+                source_had_items=source_had_items,
+                items=items,
+                inserted_item_ids=summary.inserted_item_ids,
+            )
+            if baselined:
+                message += f"；已将 {baselined} 条无日期历史基线标记为已入日报"
             store.record_health(source.id, ok=True, message=message, item_count=len(items))
             results.append(
                 SourcePollResult(
@@ -43,3 +55,19 @@ def poll_sources(
                 )
             )
     return PollResult(results=results)
+
+
+def _baseline_initial_undated_backfill(
+    *,
+    store: RadarStore,
+    source_had_items: bool,
+    items: list[NormalizedItem],
+    inserted_item_ids: tuple[int, ...],
+) -> int:
+    if source_had_items:
+        return 0
+    if len(inserted_item_ids) <= UNDATED_INITIAL_BACKFILL_THRESHOLD:
+        return 0
+    if any(getattr(item, "published_at", None) for item in items):
+        return 0
+    return store.mark_new_items_daily(list(inserted_item_ids))

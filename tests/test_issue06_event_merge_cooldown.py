@@ -208,6 +208,11 @@ class EventMergeCooldownIssueTests(unittest.TestCase):
                     status="sent",
                     message='{"StatusCode":0}',
                 )
+            with sqlite3.connect(db_path) as connection:
+                connection.execute(
+                    "UPDATE alert_history SET alerted_at = '2026-05-31T08:05:00+00:00'"
+                )
+                connection.commit()
 
             result = generate_daily_digest(
                 db_path=db_path,
@@ -216,7 +221,7 @@ class EventMergeCooldownIssueTests(unittest.TestCase):
             )
 
             report = result.report_path.read_text(encoding="utf-8")
-            self.assertIn("supporting: agents-radar Daily Digest", report)
+            self.assertIn("支持来源：agents-radar Daily Digest", report)
 
     def _item(
         self,

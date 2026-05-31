@@ -37,7 +37,7 @@ def send_next_critical_alert(
         merge_events(store)
         candidate = _select_candidate(store, rules=rules)
         if candidate is None:
-            return AlertRunResult(status="skipped", message="no unalerted critical item")
+            return AlertRunResult(status="skipped", message="没有待发送的强提醒")
 
         event_key, item, decision = candidate
         supporting_sources = store.event_supporting_sources(event_key, exclude_item_id=item.id)
@@ -50,7 +50,7 @@ def send_next_critical_alert(
         if not webhook_url:
             return AlertRunResult(
                 status="blocked",
-                message="missing FEISHU_WEBHOOK_URL",
+                message="缺少 FEISHU_WEBHOOK_URL",
                 alert_key=f"event:{event_key}",
                 short_id=alert_message.short_id,
                 title=alert_message.title,
@@ -68,7 +68,7 @@ def send_next_critical_alert(
         if not delivery.ok:
             return AlertRunResult(
                 status="failed",
-                message=delivery.message or "Feishu webhook delivery failed",
+                message=delivery.message or "飞书 Webhook 发送失败",
                 alert_key=f"event:{event_key}",
                 short_id=alert_message.short_id,
                 title=alert_message.title,
@@ -85,7 +85,7 @@ def send_next_critical_alert(
         )
         return AlertRunResult(
             status="sent",
-            message="Feishu alert sent",
+            message="飞书提醒已发送",
             sent=True,
             alert_key=f"event:{event_key}",
             short_id=alert_message.short_id,
@@ -100,7 +100,7 @@ def build_alert_message(
     *,
     supporting_sources: tuple[str, ...] = (),
 ) -> AlertMessage:
-    why = "; ".join(decision.reasons)
+    why = "；".join(_localize_reason(reason) for reason in decision.reasons)
     return AlertMessage(
         short_id=item.fingerprint[:10],
         title=item.title,
@@ -111,6 +111,24 @@ def build_alert_message(
         supporting_sources=supporting_sources,
         matched_terms=decision.matched_terms,
     )
+
+
+def _localize_reason(reason: str) -> str:
+    if reason.startswith("official authority: "):
+        return "官方来源：" + reason.removeprefix("official authority: ")
+    if reason.startswith("candidate authority: "):
+        return "候选来源：" + reason.removeprefix("candidate authority: ")
+    if reason.startswith("high-signal content type: "):
+        return "高信号内容类型：" + reason.removeprefix("high-signal content type: ")
+    return {
+        "breaking change": "破坏性变更",
+        "migration impact": "迁移影响",
+        "deprecation or removal": "弃用或移除",
+        "pricing or limit change": "价格或限额变化",
+        "model or product release": "模型或产品发布",
+        "security or availability event": "安全或可用性事件",
+        "developer-tool workflow impact": "开发工具工作流影响",
+    }.get(reason, reason)
 
 
 def _select_candidate(

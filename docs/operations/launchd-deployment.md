@@ -171,7 +171,7 @@ Expected result:
 
 To smoke-test source failure visibility, run a temporary manifest with a missing
 fixture path and then run the daily command. The poll output should include
-`failures=1`, and the generated digest should list the source failure.
+`失败=1`, and the generated digest should list the source failure.
 
 After launchd is loaded, kickstart the poll job and confirm that
 `poll.out.log` receives output. Then kickstart the digest job and confirm that a

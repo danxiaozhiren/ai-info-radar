@@ -26,7 +26,7 @@ def extract_items(fetched: FetchedSource) -> list[NormalizedItem]:
         return extract_statuspage_incidents(fetched)
     if strategy == "official_model_pricing":
         return extract_official_model_pricing(fetched)
-    raise ExtractionError(f"Unsupported parsing strategy: {strategy}")
+    raise ExtractionError(f"不支持的解析策略：{strategy}")
 
 
 def extract_anthropic_engineering(fetched: FetchedSource) -> list[NormalizedItem]:
@@ -34,7 +34,7 @@ def extract_anthropic_engineering(fetched: FetchedSource) -> list[NormalizedItem
     parser.feed(fetched.body)
     cards = parser.cards
     if not cards:
-        raise ExtractionError(f"No Anthropic Engineering items found for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 未找到 Anthropic Engineering 条目。")
 
     items: list[NormalizedItem] = []
     for position, card in enumerate(cards, start=1):
@@ -73,14 +73,14 @@ def extract_anthropic_engineering(fetched: FetchedSource) -> list[NormalizedItem
             )
         )
     if not items:
-        raise ExtractionError(f"Anthropic Engineering cards were incomplete for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 的 Anthropic Engineering 卡片信息不完整。")
     return items
 
 
 def extract_claude_code_changelog(fetched: FetchedSource) -> list[NormalizedItem]:
     entries = _parse_markdown_changelog(fetched.body)
     if not entries:
-        raise ExtractionError(f"No Claude Code changelog entries found for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 未找到 Claude Code 更新日志条目。")
 
     items: list[NormalizedItem] = []
     for position, entry in enumerate(entries, start=1):
@@ -123,7 +123,7 @@ def extract_claude_code_changelog(fetched: FetchedSource) -> list[NormalizedItem
             )
         )
     if not items:
-        raise ExtractionError(f"Claude Code changelog entries were incomplete for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 的 Claude Code 更新日志条目信息不完整。")
     return items
 
 
@@ -163,7 +163,7 @@ def extract_agents_radar_digest(fetched: FetchedSource) -> list[NormalizedItem]:
     parser.feed(fetched.body)
     cards = parser.cards
     if not cards:
-        raise ExtractionError(f"No agents-radar candidate items found for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 未找到 agents-radar 候选条目。")
 
     items: list[NormalizedItem] = []
     for position, card in enumerate(cards, start=1):
@@ -207,7 +207,7 @@ def extract_agents_radar_digest(fetched: FetchedSource) -> list[NormalizedItem]:
             )
         )
     if not items:
-        raise ExtractionError(f"agents-radar candidate cards were incomplete for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 的 agents-radar 候选卡片信息不完整。")
     return items
 
 
@@ -215,11 +215,11 @@ def extract_statuspage_incidents(fetched: FetchedSource) -> list[NormalizedItem]
     try:
         payload = json.loads(fetched.body)
     except json.JSONDecodeError as exc:
-        raise ExtractionError(f"Statuspage payload was not valid JSON for {fetched.source.id}.") from exc
+        raise ExtractionError(f"{fetched.source.id} 的 Statuspage 响应不是合法 JSON。") from exc
 
     incidents = payload.get("incidents")
     if not isinstance(incidents, list):
-        raise ExtractionError(f"Statuspage payload did not contain incidents for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 的 Statuspage 响应不包含 incidents 列表。")
 
     items: list[NormalizedItem] = []
     for position, incident in enumerate(incidents, start=1):
@@ -284,7 +284,7 @@ def extract_official_model_pricing(fetched: FetchedSource) -> list[NormalizedIte
     parser.feed(fetched.body)
     records = parser.records
     if not records:
-        raise ExtractionError(f"No model pricing records found for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 未找到模型价格记录。")
 
     items: list[NormalizedItem] = []
     for position, record in enumerate(records, start=1):
@@ -335,7 +335,7 @@ def extract_official_model_pricing(fetched: FetchedSource) -> list[NormalizedIte
             )
         )
     if not items:
-        raise ExtractionError(f"Model pricing records were incomplete for {fetched.source.id}.")
+        raise ExtractionError(f"{fetched.source.id} 的模型价格记录信息不完整。")
     return items
 
 

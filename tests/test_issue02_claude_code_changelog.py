@@ -91,10 +91,10 @@ class ClaudeCodeChangelogIssueTests(unittest.TestCase):
 
             self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
             self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
-            self.assertIn("inserted=2", first.stdout)
-            self.assertIn("existing=0", first.stdout)
-            self.assertIn("inserted=0", second.stdout)
-            self.assertIn("existing=2", second.stdout)
+            self.assertIn("新增=2", first.stdout)
+            self.assertIn("已存在=0", first.stdout)
+            self.assertIn("新增=0", second.stdout)
+            self.assertIn("已存在=2", second.stdout)
 
             with sqlite3.connect(db_path) as connection:
                 connection.row_factory = sqlite3.Row

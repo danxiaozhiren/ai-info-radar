@@ -71,12 +71,12 @@ class FeishuAlertIssueTests(unittest.TestCase):
             self.assertTrue(first.sent)
             self.assertEqual(first.title, "Claude Code 1.2.0")
             self.assertEqual(second.status, "skipped")
-            self.assertEqual(second.message, "no unalerted critical item")
+            self.assertEqual(second.message, "没有待发送的强提醒")
             self.assertEqual(len(deliveries), 1)
             self.assertTrue(deliveries[0].short_id)
             self.assertEqual(deliveries[0].source, "Claude Code Changelog (Anthropic)")
             self.assertEqual(deliveries[0].authority, "official")
-            self.assertIn("breaking change", deliveries[0].why_it_matters)
+            self.assertIn("破坏性变更", deliveries[0].why_it_matters)
             self.assertTrue(deliveries[0].original_link.endswith("#1-2-0"))
 
             with sqlite3.connect(db_path) as connection:
@@ -106,12 +106,12 @@ class FeishuAlertIssueTests(unittest.TestCase):
         self.assertEqual(payload["msg_type"], "text")
         text = payload["content"]["text"]  # type: ignore[index]
         self.assertIn("[abc123def0] Claude Code 1.2.0", text)
-        self.assertIn("Source: Claude Code Changelog (Anthropic)", text)
-        self.assertIn("Authority: official", text)
-        self.assertIn("Why: official authority: official; breaking change", text)
-        self.assertIn("Link: https://raw.githubusercontent.com", text)
-        self.assertIn("Supporting sources: Anthropic Engineering", text)
-        self.assertIn("Matched terms: breaking change, deprecated", text)
+        self.assertIn("来源：Claude Code Changelog (Anthropic)", text)
+        self.assertIn("权威级别：official", text)
+        self.assertIn("触发原因：official authority: official; breaking change", text)
+        self.assertIn("原始链接：https://raw.githubusercontent.com", text)
+        self.assertIn("支持来源：Anthropic Engineering", text)
+        self.assertIn("命中关键词：breaking change, deprecated", text)
 
     def test_feishu_sender_accepts_fake_transport_for_networkless_tests(self) -> None:
         message = AlertMessage(
@@ -157,8 +157,8 @@ class FeishuAlertIssueTests(unittest.TestCase):
             result = self._run_alert(db_path, env_overrides={"FEISHU_WEBHOOK_URL": None})
 
             self.assertEqual(result.returncode, 1)
-            self.assertIn("alert blocked: missing FEISHU_WEBHOOK_URL", result.stdout)
-            self.assertIn("set FEISHU_WEBHOOK_URL", result.stdout)
+            self.assertIn("提醒被阻止：缺少 FEISHU_WEBHOOK_URL", result.stdout)
+            self.assertIn("请设置 FEISHU_WEBHOOK_URL", result.stdout)
 
     def test_alert_cli_skips_when_no_critical_items_exist(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -169,7 +169,7 @@ class FeishuAlertIssueTests(unittest.TestCase):
             result = self._run_alert(db_path, env_overrides={"FEISHU_WEBHOOK_URL": None})
 
             self.assertEqual(result.returncode, 0)
-            self.assertIn("alert skipped: no unalerted critical item", result.stdout)
+            self.assertIn("提醒已跳过：没有待发送的强提醒", result.stdout)
 
     def _run_poll(self, db_path: Path) -> subprocess.CompletedProcess[str]:
         env = {**os.environ, "PYTHONPATH": str(SRC)}

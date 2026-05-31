@@ -25,7 +25,7 @@ class LaunchdDeploymentDocsIssueTests(unittest.TestCase):
             "StartCalendarInterval",
             "launchctl bootstrap",
             "launchctl kickstart",
-            "failures=1",
+            "失败=1",
             "daily",
             "Do not commit",
         ):

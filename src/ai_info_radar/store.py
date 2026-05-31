@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS event_match_keys (
 class InsertSummary:
     inserted: int
     existing: int
+    inserted_item_ids: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -170,6 +171,7 @@ class RadarStore:
     def insert_items(self, items: list[NormalizedItem]) -> InsertSummary:
         inserted = 0
         existing = 0
+        inserted_item_ids: list[int] = []
         for item in items:
             cursor = self.connection.execute(
                 """
@@ -198,10 +200,15 @@ class RadarStore:
             )
             if cursor.rowcount == 1:
                 inserted += 1
+                inserted_item_ids.append(int(cursor.lastrowid))
             else:
                 existing += 1
         self.connection.commit()
-        return InsertSummary(inserted=inserted, existing=existing)
+        return InsertSummary(
+            inserted=inserted,
+            existing=existing,
+            inserted_item_ids=tuple(inserted_item_ids),
+        )
 
     def record_health(self, source_id: str, ok: bool, message: str, item_count: int) -> None:
         self.connection.execute(
@@ -213,9 +220,16 @@ class RadarStore:
         )
         self.connection.commit()
 
+    def source_item_count(self, source_id: str) -> int:
+        row = self.connection.execute(
+            "SELECT COUNT(*) AS count FROM items WHERE source_id = ?",
+            (source_id,),
+        ).fetchone()
+        return int(row["count"]) if row is not None else 0
+
     def list_items(self, *, state: str | None = None) -> list[StoredItem]:
         if state is not None and state not in ITEM_STATES:
-            raise ItemStateError(f"Unsupported item state: {state}")
+            raise ItemStateError(f"不支持的条目状态：{state}")
         where = "WHERE state = ?" if state is not None else ""
         parameters = (state,) if state is not None else ()
         rows = self.connection.execute(
@@ -459,7 +473,7 @@ class RadarStore:
         if excluded:
             unsupported = sorted(set(excluded) - ITEM_STATES)
             if unsupported:
-                raise ItemStateError(f"Unsupported item state: {', '.join(unsupported)}")
+                raise ItemStateError(f"不支持的条目状态：{', '.join(unsupported)}")
             placeholders = ", ".join("?" for _ in excluded)
             where = f"WHERE i.state NOT IN ({placeholders})"
             parameters = excluded
@@ -543,7 +557,7 @@ class RadarStore:
     def resolve_item_identifier(self, identifier: str) -> StoredItem:
         cleaned = identifier.strip()
         if not cleaned:
-            raise ItemStateError("Empty item identifier.")
+            raise ItemStateError("条目标识不能为空。")
 
         if cleaned.isdecimal():
             item = self._item_by_id(int(cleaned))
@@ -551,14 +565,14 @@ class RadarStore:
                 return item
 
         if len(cleaned) < 6:
-            raise ItemStateError(f"Item fingerprint prefix is too short: {cleaned}")
+            raise ItemStateError(f"条目指纹前缀太短：{cleaned}")
 
         matches = self._items_by_fingerprint_prefix(cleaned)
         if not matches:
-            raise ItemStateError(f"Unknown item identifier: {cleaned}")
+            raise ItemStateError(f"未知条目标识：{cleaned}")
         if len(matches) > 1:
             matching_ids = ", ".join(str(item.id) for item in matches)
-            raise ItemStateError(f"Ambiguous item identifier {cleaned}; matches item ids: {matching_ids}")
+            raise ItemStateError(f"条目标识 {cleaned} 不唯一；匹配的条目 id：{matching_ids}")
         return matches[0]
 
     def set_item_state_by_identifiers(
@@ -567,9 +581,9 @@ class RadarStore:
         state: str,
     ) -> list[ItemStateUpdate]:
         if state not in USER_SETTABLE_ITEM_STATES:
-            raise ItemStateError(f"State is not user-settable: {state}")
+            raise ItemStateError(f"该状态不能由用户设置：{state}")
         if not identifiers:
-            raise ItemStateError("At least one item identifier is required.")
+            raise ItemStateError("至少需要一个条目标识。")
 
         resolved: dict[int, StoredItem] = {}
         for identifier in identifiers:
@@ -590,7 +604,7 @@ class RadarStore:
 
     def set_item_state_by_id(self, item_id: int, state: str) -> None:
         if state not in ITEM_STATES:
-            raise ItemStateError(f"Unsupported item state: {state}")
+            raise ItemStateError(f"不支持的条目状态：{state}")
         self.connection.execute(
             "UPDATE items SET state = ? WHERE id = ?",
             (state, item_id),

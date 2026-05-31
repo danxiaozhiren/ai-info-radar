@@ -133,7 +133,7 @@ def load_rules(path: str | Path | None = None) -> ClassificationRules:
         return DEFAULT_RULES
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise RulesError("Rules config must be a JSON object.")
+        raise RulesError("规则配置必须是 JSON 对象。")
     return ClassificationRules(
         official_authority_levels=_string_tuple(raw, "official_authority_levels"),
         candidate_authority_levels=_string_tuple(raw, "candidate_authority_levels"),
@@ -185,29 +185,29 @@ def classify_item(item: StoredItem, rules: ClassificationRules | None = None) ->
 def _string_tuple(raw: dict[str, Any], field: str) -> tuple[str, ...]:
     value = raw.get(field)
     if not isinstance(value, list):
-        raise RulesError(f"Rules field '{field}' must be a list.")
+        raise RulesError(f"规则字段 '{field}' 必须是列表。")
     strings = tuple(_clean_string(item, field) for item in value)
     if not strings:
-        raise RulesError(f"Rules field '{field}' cannot be empty.")
+        raise RulesError(f"规则字段 '{field}' 不能为空。")
     return strings
 
 
 def _keyword_rules(value: Any) -> tuple[KeywordRule, ...]:
     if not isinstance(value, list) or not value:
-        raise RulesError("Rules field 'keyword_rules' must be a non-empty list.")
+        raise RulesError("规则字段 'keyword_rules' 必须是非空列表。")
     rules: list[KeywordRule] = []
     for index, entry in enumerate(value):
         if not isinstance(entry, dict):
-            raise RulesError(f"Keyword rule at index {index} must be an object.")
+            raise RulesError(f"索引 {index} 处的关键词规则必须是对象。")
         name = _clean_string(entry.get("name"), f"keyword_rules[{index}].name")
         terms_value = entry.get("terms")
         if not isinstance(terms_value, list) or not terms_value:
-            raise RulesError(f"Keyword rule '{name}' terms must be a non-empty list.")
+            raise RulesError(f"关键词规则 '{name}' 的 terms 必须是非空列表。")
         terms = tuple(_clean_string(term, f"keyword_rules[{index}].terms") for term in terms_value)
         try:
             score = int(entry["score"])
         except (KeyError, TypeError, ValueError) as exc:
-            raise RulesError(f"Keyword rule '{name}' score must be an integer.") from exc
+            raise RulesError(f"关键词规则 '{name}' 的 score 必须是整数。") from exc
         reason = _clean_string(entry.get("reason"), f"keyword_rules[{index}].reason")
         rules.append(KeywordRule(name=name, terms=terms, score=score, reason=reason))
     return tuple(rules)
@@ -216,5 +216,5 @@ def _keyword_rules(value: Any) -> tuple[KeywordRule, ...]:
 def _clean_string(value: Any, field: str) -> str:
     cleaned = str(value).strip().lower() if value is not None else ""
     if not cleaned:
-        raise RulesError(f"Rules field '{field}' cannot be empty.")
+        raise RulesError(f"规则字段 '{field}' 不能为空。")
     return cleaned

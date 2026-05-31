@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -127,8 +128,8 @@ class StatusIncidentIssueTests(unittest.TestCase):
                 sender=fake_sender,
             )
 
-            self.assertIn("inserted=2", first_poll.stdout)
-            self.assertIn("existing=2", second_poll.stdout)
+            self.assertIn("新增=2", first_poll.stdout)
+            self.assertIn("已存在=2", second_poll.stdout)
             self.assertEqual(first_alert.status, "sent")
             self.assertEqual(second_alert.status, "sent")
             self.assertEqual(third_alert.status, "skipped")
@@ -149,17 +150,26 @@ class StatusIncidentIssueTests(unittest.TestCase):
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
             poll = self._run_poll(db_path, manifest_path)
+            with sqlite3.connect(db_path) as connection:
+                connection.execute(
+                    """
+                    UPDATE source_health
+                    SET checked_at = '2026-05-31T08:10:00+00:00'
+                    WHERE source_id = 'anthropic-status-incidents'
+                    """
+                )
+                connection.commit()
             digest = generate_daily_digest(
                 db_path=db_path,
                 reports_dir=temp_path / "reports",
                 report_date=date(2026, 5, 31),
             )
 
-            self.assertIn("failures=1", poll.stdout)
+            self.assertIn("失败=1", poll.stdout)
             report = digest.report_path.read_text(encoding="utf-8")
-            self.assertIn("## Source Failures", report)
+            self.assertIn("## 来源失败", report)
             self.assertIn("anthropic-status-incidents", report)
-            self.assertIn("Could not read fixture", report)
+            self.assertIn("无法读取", report)
 
     def test_empty_status_incident_feed_is_ok_and_records_zero_items(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -175,9 +185,9 @@ class StatusIncidentIssueTests(unittest.TestCase):
 
             result = self._run_poll(db_path=temp_path / "radar.sqlite", manifest_path=manifest_path, repo_root=Path("/"))
 
-            self.assertIn("inserted=0", result.stdout)
-            self.assertIn("failures=0", result.stdout)
-            self.assertIn("0 item(s) extracted", result.stdout)
+            self.assertIn("新增=0", result.stdout)
+            self.assertIn("失败=0", result.stdout)
+            self.assertIn("提取到 0 条", result.stdout)
 
     def _run_poll(
         self,

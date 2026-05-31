@@ -17,7 +17,7 @@ def fetch_source(source: Source, repo_root: str | Path, timeout_seconds: float =
         try:
             body = path.read_text(encoding="utf-8")
         except OSError as exc:
-            raise FetchError(f"Could not read fixture for {source.id}: {path}") from exc
+            raise FetchError(f"无法读取 {source.id} 的本地夹具：{path}") from exc
         return FetchedSource(source=source, body=body, fetched_at=fetched_at, final_url=source.url)
 
     request = Request(source.url, headers={"User-Agent": "ai-info-radar/0.1"})
@@ -27,6 +27,6 @@ def fetch_source(source: Source, repo_root: str | Path, timeout_seconds: float =
             body = response.read().decode(charset, errors="replace")
             final_url = response.geturl()
     except OSError as exc:
-        raise FetchError(f"Could not fetch {source.id}: {exc}") from exc
+        raise FetchError(f"无法抓取 {source.id}：{exc}") from exc
 
     return FetchedSource(source=source, body=body, fetched_at=fetched_at, final_url=final_url)

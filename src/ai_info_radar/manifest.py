@@ -41,13 +41,13 @@ def load_sources(path: str | Path, *, include_disabled: bool = False) -> list[So
     raw = json.loads(manifest_path.read_text(encoding="utf-8"))
     entries = raw.get("sources")
     if not isinstance(entries, list):
-        raise ManifestError("Manifest must contain a 'sources' list.")
+        raise ManifestError("源清单必须包含 'sources' 列表。")
 
     sources = [_source_from_mapping(entry, index) for index, entry in enumerate(entries)]
     ids = [source.id for source in sources]
     duplicate_ids = sorted({source_id for source_id in ids if ids.count(source_id) > 1})
     if duplicate_ids:
-        raise ManifestError(f"Duplicate source ids: {', '.join(duplicate_ids)}")
+        raise ManifestError(f"重复的来源 id：{', '.join(duplicate_ids)}")
     if include_disabled:
         return sources
     return [source for source in sources if source.enabled]
@@ -55,11 +55,11 @@ def load_sources(path: str | Path, *, include_disabled: bool = False) -> list[So
 
 def _source_from_mapping(entry: Any, index: int) -> Source:
     if not isinstance(entry, dict):
-        raise ManifestError(f"Source at index {index} must be an object.")
+        raise ManifestError(f"索引 {index} 处的来源必须是对象。")
 
     missing = sorted(REQUIRED_FIELDS - entry.keys())
     if missing:
-        raise ManifestError(f"Source at index {index} is missing fields: {', '.join(missing)}")
+        raise ManifestError(f"索引 {index} 处的来源缺少字段：{', '.join(missing)}")
 
     source_id = _clean_string(entry["id"], "id", index)
     name = _clean_string(entry["name"], "name", index)
@@ -71,18 +71,18 @@ def _source_from_mapping(entry: Any, index: int) -> Source:
     content_type = _clean_string(entry["content_type"], "content_type", index)
 
     if source_type not in SUPPORTED_SOURCE_TYPES:
-        raise ManifestError(f"Unsupported source_type for {source_id}: {source_type}")
+        raise ManifestError(f"{source_id} 的 source_type 不受支持：{source_type}")
     if authority_level not in SUPPORTED_AUTHORITY_LEVELS:
-        raise ManifestError(f"Unsupported authority_level for {source_id}: {authority_level}")
+        raise ManifestError(f"{source_id} 的 authority_level 不受支持：{authority_level}")
     if parsing_strategy not in SUPPORTED_PARSING_STRATEGIES:
-        raise ManifestError(f"Unsupported parsing_strategy for {source_id}: {parsing_strategy}")
+        raise ManifestError(f"{source_id} 的 parsing_strategy 不受支持：{parsing_strategy}")
 
     try:
         priority = int(entry["priority"])
     except (TypeError, ValueError) as exc:
-        raise ManifestError(f"Source {source_id} priority must be an integer.") from exc
+        raise ManifestError(f"来源 {source_id} 的 priority 必须是整数。") from exc
     if not isinstance(entry["enabled"], bool):
-        raise ManifestError(f"Source {source_id} enabled must be a boolean.")
+        raise ManifestError(f"来源 {source_id} 的 enabled 必须是布尔值。")
 
     return Source(
         id=source_id,
@@ -102,7 +102,7 @@ def _source_from_mapping(entry: Any, index: int) -> Source:
 def _clean_string(value: Any, field: str, index: int) -> str:
     cleaned = str(value).strip() if value is not None else ""
     if not cleaned:
-        raise ManifestError(f"Source at index {index} field '{field}' cannot be empty.")
+        raise ManifestError(f"索引 {index} 处来源的字段 '{field}' 不能为空。")
     return cleaned
 
 

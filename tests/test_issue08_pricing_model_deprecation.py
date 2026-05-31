@@ -117,10 +117,10 @@ class PricingModelDeprecationIssueTests(unittest.TestCase):
             first = self._run_poll(db_path)
             second = self._run_poll(db_path)
 
-            self.assertIn("inserted=2", first.stdout)
-            self.assertIn("existing=0", first.stdout)
-            self.assertIn("inserted=0", second.stdout)
-            self.assertIn("existing=2", second.stdout)
+            self.assertIn("新增=2", first.stdout)
+            self.assertIn("已存在=0", first.stdout)
+            self.assertIn("新增=0", second.stdout)
+            self.assertIn("已存在=2", second.stdout)
 
     def _run_poll(self, db_path: Path) -> subprocess.CompletedProcess[str]:
         env = {**os.environ, "PYTHONPATH": str(SRC)}

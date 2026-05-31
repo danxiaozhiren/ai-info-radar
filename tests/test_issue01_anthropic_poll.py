@@ -86,10 +86,10 @@ class AnthropicPollIssueTests(unittest.TestCase):
 
             self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
             self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
-            self.assertIn("inserted=2", first.stdout)
-            self.assertIn("existing=0", first.stdout)
-            self.assertIn("inserted=0", second.stdout)
-            self.assertIn("existing=2", second.stdout)
+            self.assertIn("新增=2", first.stdout)
+            self.assertIn("已存在=0", first.stdout)
+            self.assertIn("新增=0", second.stdout)
+            self.assertIn("已存在=2", second.stdout)
 
             with sqlite3.connect(db_path) as connection:
                 connection.row_factory = sqlite3.Row
@@ -128,8 +128,8 @@ class AnthropicPollIssueTests(unittest.TestCase):
             result = self._run_poll(db_path, manifest_path=manifest_path)
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertIn("inserted=2", result.stdout)
-            self.assertIn("failures=1", result.stdout)
+            self.assertIn("新增=2", result.stdout)
+            self.assertIn("失败=1", result.stdout)
 
             with sqlite3.connect(db_path) as connection:
                 item_count = connection.execute("SELECT COUNT(*) FROM items").fetchone()[0]
@@ -140,7 +140,7 @@ class AnthropicPollIssueTests(unittest.TestCase):
             self.assertEqual(item_count, 2)
             self.assertEqual(len(failures), 1)
             self.assertEqual(failures[0][0], "broken-anthropic-engineering")
-            self.assertIn("Could not read fixture", failures[0][2])
+            self.assertIn("无法读取", failures[0][2])
 
     def _run_poll(
         self,

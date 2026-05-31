@@ -16,15 +16,15 @@ class UrlOpenLike(Protocol):
 def build_feishu_payload(message: AlertMessage) -> dict[str, object]:
     lines = [
         f"[{message.short_id}] {message.title}",
-        f"Source: {message.source}",
-        f"Authority: {message.authority}",
-        f"Why: {message.why_it_matters}",
-        f"Link: {message.original_link}",
+        f"来源：{message.source}",
+        f"权威级别：{message.authority}",
+        f"触发原因：{message.why_it_matters}",
+        f"原始链接：{message.original_link}",
     ]
     if message.supporting_sources:
-        lines.append(f"Supporting sources: {', '.join(message.supporting_sources)}")
+        lines.append(f"支持来源：{', '.join(message.supporting_sources)}")
     if message.matched_terms:
-        lines.append(f"Matched terms: {', '.join(message.matched_terms)}")
+        lines.append(f"命中关键词：{', '.join(message.matched_terms)}")
 
     return build_feishu_text_payload("\n".join(lines))
 
