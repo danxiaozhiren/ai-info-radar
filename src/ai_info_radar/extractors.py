@@ -24,6 +24,8 @@ def extract_items(fetched: FetchedSource) -> list[NormalizedItem]:
         return extract_agents_radar_digest(fetched)
     if strategy == "statuspage_incidents":
         return extract_statuspage_incidents(fetched)
+    if strategy == "official_model_pricing":
+        return extract_official_model_pricing(fetched)
     raise ExtractionError(f"Unsupported parsing strategy: {strategy}")
 
 
@@ -248,6 +250,66 @@ def extract_statuspage_incidents(fetched: FetchedSource) -> list[NormalizedItem]
     return items
 
 
+def extract_official_model_pricing(fetched: FetchedSource) -> list[NormalizedItem]:
+    parser = _OfficialModelPricingParser(fetched.final_url)
+    parser.feed(fetched.body)
+    records = parser.records
+    if not records:
+        raise ExtractionError(f"No model pricing records found for {fetched.source.id}.")
+
+    items: list[NormalizedItem] = []
+    for position, record in enumerate(records, start=1):
+        model = record.model.strip()
+        if not model:
+            continue
+        title = f"Model pricing: {model}"
+        url = _with_fragment(fetched.final_url, record.fragment or _slugify(model))
+        published_at = record.effective_date.strip() or None
+        summary = _model_pricing_summary(record)
+        fingerprint = content_fingerprint(
+            title=title,
+            url=url,
+            published_at=published_at,
+            summary=summary,
+            vendor=fetched.source.vendor,
+            content_type=fetched.source.content_type,
+        )
+        trace = {
+            "parser": fetched.source.parsing_strategy,
+            "position": position,
+            "fetched_url": fetched.final_url,
+            "source_item_id": model,
+            "canonical_url": url,
+            "model": model,
+            "input_price_per_million": record.input_price,
+            "output_price_per_million": record.output_price,
+            "context_window": record.context_window,
+            "capabilities": tuple(record.capabilities),
+            "rate_limit": record.rate_limit,
+            "deprecation": record.deprecation,
+            "migration": record.migration,
+        }
+        items.append(
+            NormalizedItem(
+                source_id=fetched.source.id,
+                source_name=fetched.source.name,
+                vendor=fetched.source.vendor,
+                authority_level=fetched.source.authority_level,
+                content_type=fetched.source.content_type,
+                title=title,
+                url=url,
+                detected_at=fetched.fetched_at,
+                published_at=published_at,
+                summary=summary,
+                fingerprint=fingerprint,
+                trace=trace,
+            )
+        )
+    if not items:
+        raise ExtractionError(f"Model pricing records were incomplete for {fetched.source.id}.")
+    return items
+
+
 @dataclass
 class _ArticleCard:
     title: str = ""
@@ -272,6 +334,20 @@ class _AggregatorCard:
     target_source: str = ""
     published_at: str = ""
     summary: str = ""
+
+
+@dataclass
+class _ModelPricingRecord:
+    fragment: str = ""
+    model: str = ""
+    input_price: str = ""
+    output_price: str = ""
+    context_window: str = ""
+    rate_limit: str = ""
+    deprecation: str = ""
+    migration: str = ""
+    effective_date: str = ""
+    capabilities: list[str] = field(default_factory=list)
 
 
 class _AnthropicEngineeringParser(HTMLParser):
@@ -533,6 +609,110 @@ class _AgentsRadarDigestParser(HTMLParser):
         )
 
 
+class _OfficialModelPricingParser(HTMLParser):
+    def __init__(self, base_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.records: list[_ModelPricingRecord] = []
+        self._record: _ModelPricingRecord | None = None
+        self._record_depth = 0
+        self._capture: str | None = None
+        self._capture_end_tag: str | None = None
+        self._buffer: list[str] = []
+        self._ignored_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr = {key: value or "" for key, value in attrs}
+        if tag in {"script", "style", "footer", "nav", "aside"}:
+            self._ignored_depth += 1
+            return
+        if self._ignored_depth:
+            return
+
+        if self._record is None and self._is_record_container(tag, attr):
+            self._record = _ModelPricingRecord(
+                fragment=attr.get("id", "").strip(),
+                model=attr.get("data-model", "").strip(),
+                input_price=attr.get("data-input-price", "").strip(),
+                output_price=attr.get("data-output-price", "").strip(),
+                context_window=attr.get("data-context-window", "").strip(),
+                rate_limit=attr.get("data-rate-limit", "").strip(),
+                deprecation=attr.get("data-deprecation", "").strip(),
+                migration=attr.get("data-migration", "").strip(),
+                effective_date=attr.get("data-effective-date", "").strip(),
+            )
+            capabilities = attr.get("data-capabilities", "").strip()
+            if capabilities:
+                self._record.capabilities = _split_capabilities(capabilities)
+            self._record_depth = 1
+            return
+
+        if self._record is None:
+            return
+
+        self._record_depth += 1
+        field = attr.get("data-field", "").strip()
+        if field == "capability":
+            self._begin_capture("capability", tag)
+            return
+        if field in {
+            "model",
+            "input_price",
+            "output_price",
+            "context_window",
+            "rate_limit",
+            "deprecation",
+            "migration",
+            "effective_date",
+        } and not getattr(self._record, field):
+            self._begin_capture(field, tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._ignored_depth:
+            if tag in {"script", "style", "footer", "nav", "aside"}:
+                self._ignored_depth -= 1
+            return
+
+        if self._record is None:
+            return
+
+        if self._capture and tag == self._capture_end_tag:
+            captured = _normalize_text("".join(self._buffer))
+            if captured:
+                if self._capture == "capability":
+                    self._record.capabilities.append(captured)
+                else:
+                    setattr(self._record, self._capture, captured)
+            self._capture = None
+            self._capture_end_tag = None
+            self._buffer = []
+
+        self._record_depth -= 1
+        if self._record_depth == 0:
+            self.records.append(self._record)
+            self._record = None
+
+    def handle_data(self, data: str) -> None:
+        if self._ignored_depth or not self._capture:
+            return
+        self._buffer.append(data)
+
+    def _begin_capture(self, field: str, end_tag: str) -> None:
+        self._capture = field
+        self._capture_end_tag = end_tag
+        self._buffer = []
+
+    def _is_record_container(self, tag: str, attr: dict[str, str]) -> bool:
+        if tag not in {"article", "section", "div", "tr"}:
+            return False
+        classes = set(attr.get("class", "").split())
+        return (
+            "data-model-pricing" in attr
+            or "model-pricing-row" in classes
+            or attr.get("data-testid") == "model-pricing"
+        )
+
+
 def _claude_code_title(raw_title: str) -> str:
     title = _normalize_text(raw_title)
     if title.lower().startswith("claude code"):
@@ -598,6 +778,29 @@ def _status_summary(
     if affected_components:
         parts.append(f"Affected components: {', '.join(affected_components)}.")
     return " ".join(parts)
+
+
+def _model_pricing_summary(record: _ModelPricingRecord) -> str:
+    parts = [f"Model: {record.model}."]
+    if record.input_price:
+        parts.append(f"Input price: {record.input_price}.")
+    if record.output_price:
+        parts.append(f"Output price: {record.output_price}.")
+    if record.context_window:
+        parts.append(f"Context: {record.context_window}.")
+    if record.capabilities:
+        parts.append(f"Capabilities: {', '.join(tuple(dict.fromkeys(record.capabilities)))}.")
+    if record.rate_limit:
+        parts.append(f"Rate limit: {record.rate_limit}.")
+    if record.deprecation:
+        parts.append(f"Deprecation: {record.deprecation}.")
+    if record.migration:
+        parts.append(f"Migration: {record.migration}.")
+    return " ".join(parts)
+
+
+def _split_capabilities(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def _normalize_text(value: str) -> str:
