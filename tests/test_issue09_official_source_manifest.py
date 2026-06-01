@@ -35,9 +35,19 @@ class OfficialSourceManifestIssueTests(unittest.TestCase):
         enabled_sources = load_sources(MANIFEST)
         all_sources = load_sources(MANIFEST, include_disabled=True)
 
-        self.assertEqual(enabled_sources, [])
         self.assertGreaterEqual(len(all_sources), 35)
-        self.assertTrue(all(not source.enabled for source in all_sources))
+        enabled_ids = {s.id for s in enabled_sources}
+        expected_enabled = {
+            "anthropic-engineering",
+            "anthropic-claude-code-changelog",
+            "anthropic-status-incidents",
+            "openai-status-incidents",
+            "openai-api-pricing",
+            "qwen-blog",
+            "google-ai-blog",
+            "huggingface-blog",
+        }
+        self.assertEqual(enabled_ids, expected_enabled)
 
     def test_anthropic_and_openai_required_coverage_present(self) -> None:
         source_ids = {source.id for source in load_sources(MANIFEST, include_disabled=True)}

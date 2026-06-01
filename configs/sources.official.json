@@ -22,7 +22,7 @@
       "priority": 95,
       "parsing_strategy": "anthropic_engineering_index",
       "content_type": "engineering",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "anthropic-research",
@@ -58,7 +58,7 @@
       "priority": 100,
       "parsing_strategy": "claude_code_changelog",
       "content_type": "developer_changelog",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "anthropic-claude-apps-release-notes",
@@ -94,7 +94,7 @@
       "priority": 110,
       "parsing_strategy": "statuspage_incidents",
       "content_type": "status_incident",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "openai-news",
@@ -118,7 +118,7 @@
       "priority": 110,
       "parsing_strategy": "statuspage_incidents",
       "content_type": "status_incident",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "openai-docs-changelog",
@@ -142,7 +142,7 @@
       "priority": 105,
       "parsing_strategy": "official_model_pricing",
       "content_type": "pricing",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "openai-models",
@@ -250,7 +250,7 @@
       "priority": 80,
       "parsing_strategy": "rss_feed",
       "content_type": "engineering",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "qwen-code-releases",
@@ -370,7 +370,7 @@
       "priority": 85,
       "parsing_strategy": "rss_feed",
       "content_type": "engineering",
-      "enabled": false
+      "enabled": true
     },
     {
       "id": "google-deepmind-model-cards",
@@ -466,7 +466,7 @@
       "priority": 80,
       "parsing_strategy": "rss_feed",
       "content_type": "engineering",
-      "enabled": false
+      "enabled": true
     }
   ]
 }

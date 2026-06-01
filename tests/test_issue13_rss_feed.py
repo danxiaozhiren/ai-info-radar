@@ -54,7 +54,7 @@ class RssFeedParserTests(unittest.TestCase):
             items[0].url,
             "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/",
         )
-        self.assertEqual(items[0].published_at, "Wed, 21 May 2026 16:00:00 GMT")
+        self.assertEqual(items[0].published_at, "2026-05-21T16:00:00+00:00")
         self.assertEqual(items[0].vendor, "Google DeepMind")
         self.assertEqual(items[0].content_type, "engineering")
         self.assertEqual(items[0].authority_level, "official")
