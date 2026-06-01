@@ -28,6 +28,7 @@ SUPPORTED_PARSING_STRATEGIES = {
     "claude_code_changelog",
     "official_model_pricing",
     "placeholder",
+    "rss_feed",
     "statuspage_incidents",
 }
 

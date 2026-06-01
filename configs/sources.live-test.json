@@ -59,6 +59,54 @@
       "parsing_strategy": "official_model_pricing",
       "content_type": "pricing",
       "enabled": true
+    },
+    {
+      "id": "google-ai-blog",
+      "name": "Google AI Blog",
+      "vendor": "Google DeepMind",
+      "source_type": "rss",
+      "authority_level": "official",
+      "url": "https://blog.google/technology/ai/rss/",
+      "priority": 85,
+      "parsing_strategy": "rss_feed",
+      "content_type": "engineering",
+      "enabled": true
+    },
+    {
+      "id": "qwen-blog",
+      "name": "Qwen Blog",
+      "vendor": "Qwen",
+      "source_type": "rss",
+      "authority_level": "official",
+      "url": "https://qwenlm.github.io/blog/index.xml",
+      "priority": 80,
+      "parsing_strategy": "rss_feed",
+      "content_type": "engineering",
+      "enabled": true
+    },
+    {
+      "id": "huggingface-blog",
+      "name": "HuggingFace Blog",
+      "vendor": "HuggingFace",
+      "source_type": "rss",
+      "authority_level": "official",
+      "url": "https://huggingface.co/blog/feed.xml",
+      "priority": 80,
+      "parsing_strategy": "rss_feed",
+      "content_type": "engineering",
+      "enabled": true
+    },
+    {
+      "id": "openai-news",
+      "name": "OpenAI News",
+      "vendor": "OpenAI",
+      "source_type": "rss",
+      "authority_level": "official",
+      "url": "https://openai.com/news/rss",
+      "priority": 90,
+      "parsing_strategy": "rss_feed",
+      "content_type": "news",
+      "enabled": true
     }
   ]
 }

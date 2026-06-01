@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Google AI Blog</title>
+    <link>https://blog.google/technology/ai/</link>
+    <description>The latest news from Google AI</description>
+    <language>en</language>
+    <atom:link href="https://blog.google/technology/ai/rss/" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>Gemini 3.5: frontier intelligence with action</title>
+      <link>https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/</link>
+      <pubDate>Wed, 21 May 2026 16:00:00 GMT</pubDate>
+      <description>Today we're introducing Gemini 3.5, our most capable model yet with enhanced reasoning and multimodal capabilities.</description>
+    </item>
+    <item>
+      <title>I/O 2026: Welcome to the agentic Gemini era</title>
+      <link>https://blog.google/innovation-and-ai/sundar-pichai-io-2026/</link>
+      <pubDate>Mon, 19 May 2026 17:00:00 GMT</pubDate>
+      <description>At Google I/O 2026, we announced our vision for the agentic era powered by Gemini.</description>
+    </item>
+    <item>
+      <title>100 things we announced at I/O 2026</title>
+      <link>https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/</link>
+      <pubDate>Mon, 19 May 2026 14:00:00 GMT</pubDate>
+      <description>A roundup of everything we announced at Google I/O 2026 across AI, developer tools, and more.</description>
+    </item>
+  </channel>
+</rss>

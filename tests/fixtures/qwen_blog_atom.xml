@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Blog | Qwen</title>
+  <link href="https://qwenlm.github.io/blog/" rel="alternate"/>
+  <link href="https://qwenlm.github.io/blog/index.xml" rel="self"/>
+  <id>https://qwenlm.github.io/blog/</id>
+  <updated>2025-08-19T01:30:00+08:00</updated>
+  <entry>
+    <title>Qwen3Guard: Real-time Safety for Your Token Stream</title>
+    <link href="https://qwenlm.github.io/blog/qwen3guard/" rel="alternate"/>
+    <published>2025-08-19T01:30:00+08:00</published>
+    <updated>2025-08-19T01:30:00+08:00</updated>
+    <id>https://qwenlm.github.io/blog/qwen3guard/</id>
+    <summary>We are excited to introduce Qwen3Guard, a real-time safety model for token-level content moderation.</summary>
+    <content type="html">&lt;p&gt;We are excited to introduce Qwen3Guard, a real-time safety model for token-level content moderation.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Qwen-Image: Crafting with Native Text Rendering</title>
+    <link href="https://qwenlm.github.io/blog/qwen-image/" rel="alternate"/>
+    <published>2025-08-08T10:00:00+08:00</published>
+    <updated>2025-08-08T10:00:00+08:00</updated>
+    <id>https://qwenlm.github.io/blog/qwen-image/</id>
+    <summary>Qwen-Image is a native image generation model with state-of-the-art text rendering capabilities.</summary>
+    <content type="html">&lt;p&gt;Qwen-Image is a native image generation model with state-of-the-art text rendering capabilities.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <title>Qwen-Image-Edit: Image Editing with Higher Quality and Efficiency</title>
+    <link href="https://qwenlm.github.io/blog/qwen-image-edit/" rel="alternate"/>
+    <published>2025-08-01T09:00:00+08:00</published>
+    <updated>2025-08-01T09:00:00+08:00</updated>
+    <id>https://qwenlm.github.io/blog/qwen-image-edit/</id>
+    <summary>Qwen-Image-Edit extends Qwen-Image's text rendering capabilities to image editing tasks.</summary>
+    <content type="html">&lt;p&gt;Qwen-Image-Edit extends Qwen-Image's text rendering capabilities to image editing tasks.&lt;/p&gt;</content>
+  </entry>
+</feed>

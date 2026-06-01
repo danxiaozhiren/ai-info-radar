@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import email.utils
 import json
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import urldefrag, urljoin
@@ -26,6 +28,8 @@ def extract_items(fetched: FetchedSource) -> list[NormalizedItem]:
         return extract_statuspage_incidents(fetched)
     if strategy == "official_model_pricing":
         return extract_official_model_pricing(fetched)
+    if strategy == "rss_feed":
+        return extract_rss_feed(fetched)
     raise ExtractionError(f"不支持的解析策略：{strategy}")
 
 
@@ -337,6 +341,161 @@ def extract_official_model_pricing(fetched: FetchedSource) -> list[NormalizedIte
     if not items:
         raise ExtractionError(f"{fetched.source.id} 的模型价格记录信息不完整。")
     return items
+
+
+_ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
+
+
+def extract_rss_feed(fetched: FetchedSource) -> list[NormalizedItem]:
+    try:
+        root = ET.fromstring(fetched.body)
+    except ET.ParseError as exc:
+        raise ExtractionError(f"{fetched.source.id} 的 RSS/Atom 响应不是合法 XML。") from exc
+
+    feed_format, entries = _detect_feed_entries(root)
+    if not entries:
+        raise ExtractionError(f"{fetched.source.id} 未找到 RSS/Atom 条目。")
+
+    items: list[NormalizedItem] = []
+    for position, entry in enumerate(entries, start=1):
+        title = _rss_text(entry, "title", feed_format)
+        link = _rss_link(entry, feed_format)
+        published_at = _rss_date(entry, feed_format)
+        summary = _rss_description(entry, feed_format)
+        if not title or not link:
+            continue
+        fingerprint = content_fingerprint(
+            title=title,
+            url=link,
+            published_at=published_at,
+            summary=summary,
+            vendor=fetched.source.vendor,
+            content_type=fetched.source.content_type,
+        )
+        items.append(
+            NormalizedItem(
+                source_id=fetched.source.id,
+                source_name=fetched.source.name,
+                vendor=fetched.source.vendor,
+                authority_level=fetched.source.authority_level,
+                content_type=fetched.source.content_type,
+                title=title,
+                url=link,
+                detected_at=fetched.fetched_at,
+                published_at=published_at,
+                summary=summary,
+                fingerprint=fingerprint,
+                trace={
+                    "parser": "rss_feed",
+                    "feed_format": feed_format,
+                    "position": position,
+                    "fetched_url": fetched.final_url,
+                },
+            )
+        )
+    if not items:
+        raise ExtractionError(f"{fetched.source.id} 的 RSS/Atom 条目信息不完整。")
+    return items
+
+
+def _detect_feed_entries(root: ET.Element) -> tuple[str, list[ET.Element]]:
+    if root.tag == "rss" or root.tag.endswith("}rss"):
+        return "rss", root.findall(".//item")
+    if root.tag == "{http://www.w3.org/2005/Atom}feed" or root.tag == "feed":
+        return "atom", root.findall("atom:entry", _ATOM_NS) or root.findall("entry")
+    if root.tag == "channel":
+        return "rss", root.findall("item")
+    rss_items = root.findall(".//item")
+    if rss_items:
+        return "rss", rss_items
+    atom_entries = root.findall(".//{http://www.w3.org/2005/Atom}entry")
+    if atom_entries:
+        return "atom", atom_entries
+    return "unknown", []
+
+
+def _find_atom(entry: ET.Element, tag: str, feed_format: str) -> ET.Element | None:
+    if feed_format == "atom":
+        elem = entry.find(f"atom:{tag}", _ATOM_NS)
+        if elem is not None:
+            return elem
+        return entry.find(tag)
+    return entry.find(tag)
+
+
+def _rss_text(entry: ET.Element, tag: str, feed_format: str) -> str:
+    elem = _find_atom(entry, tag, feed_format)
+    return _strip_html(elem.text or "") if elem is not None else ""
+
+
+def _rss_link(entry: ET.Element, feed_format: str) -> str:
+    if feed_format == "atom":
+        link_elem = _find_atom(entry, "link", feed_format)
+        if link_elem is not None:
+            href = link_elem.get("href", "").strip()
+            if href:
+                return href
+        link_elem = entry.find("atom:link[@rel='alternate']", _ATOM_NS)
+        if link_elem is not None:
+            return link_elem.get("href", "").strip()
+    else:
+        link_elem = entry.find("link")
+        if link_elem is not None:
+            text = (link_elem.text or "").strip()
+            if text:
+                return text
+    return ""
+
+
+def _rss_date(entry: ET.Element, feed_format: str) -> str | None:
+    tags = (
+        ["published", "updated"]
+        if feed_format == "atom"
+        else ["pubDate", "published", "updated"]
+    )
+    for tag in tags:
+        elem = _find_atom(entry, tag, feed_format)
+        if elem is not None and elem.text and elem.text.strip():
+            return _normalize_date(elem.text.strip())
+    return None
+
+
+def _rss_description(entry: ET.Element, feed_format: str) -> str:
+    if feed_format == "atom":
+        for tag in ("summary", "content"):
+            elem = _find_atom(entry, tag, feed_format)
+            if elem is not None and elem.text:
+                return _strip_html(elem.text)
+    else:
+        for tag in ("description", "content:encoded"):
+            elem = entry.find(tag)
+            if elem is not None and elem.text:
+                return _strip_html(elem.text)
+    return ""
+
+
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html(value: str) -> str:
+    return _normalize_text(_HTML_TAG_RE.sub("", value))
+
+
+_DATE_PATTERNS: list[tuple[str, str]] = [
+    (r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", "iso"),
+    (r"^\d{4}-\d{2}-\d{2}", "iso_date"),
+]
+
+
+def _normalize_date(raw: str) -> str:
+    for pattern, kind in _DATE_PATTERNS:
+        if re.match(pattern, raw):
+            return raw
+    try:
+        parsed = email.utils.parsedate_to_datetime(raw)
+        return parsed.isoformat()
+    except (ValueError, TypeError):
+        return raw
 
 
 @dataclass

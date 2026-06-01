@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "google-ai-blog",
+      "name": "Google AI Blog",
+      "vendor": "Google DeepMind",
+      "source_type": "rss",
+      "authority_level": "official",
+      "url": "https://blog.google/technology/ai/rss/",
+      "priority": 80,
+      "parsing_strategy": "rss_feed",
+      "content_type": "engineering",
+      "fixture_path": "tests/fixtures/google_ai_blog.xml",
+      "enabled": true
+    }
+  ]
+}

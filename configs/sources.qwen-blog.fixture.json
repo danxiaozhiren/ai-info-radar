@@ -1,0 +1,17 @@
+{
+  "sources": [
+    {
+      "id": "qwen-blog",
+      "name": "Qwen Blog",
+      "vendor": "Qwen",
+      "source_type": "atom",
+      "authority_level": "official",
+      "url": "https://qwenlm.github.io/blog/index.xml",
+      "priority": 80,
+      "parsing_strategy": "rss_feed",
+      "content_type": "engineering",
+      "fixture_path": "tests/fixtures/qwen_blog_atom.xml",
+      "enabled": true
+    }
+  ]
+}
